@@ -1,0 +1,38 @@
+name: dashboard
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - "repos.md"
+      - "docs/board.md"
+      - "docs/milestones.md"
+      - "scripts/gen_dashboard.py"
+      - "scripts/test_gen_dashboard.py"
+  pull_request:
+    paths:
+      - "repos.md"
+      - "docs/board.md"
+      - "docs/milestones.md"
+      - "scripts/gen_dashboard.py"
+      - "scripts/test_gen_dashboard.py"
+  workflow_dispatch: {}
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Run parser tests
+        run: python -m unittest discover -s scripts -p "test_*.py" -v
+
+      - name: Regenerate dashboard
+        run: python scripts/gen_dashboard.py
+
+      - name: Require committed HTML to match generated output
+        run: git diff --exit-code -- docs/dashboard.html docs/dashboard-qunxing.html
