@@ -27,6 +27,9 @@ RE_MENTION = re.compile(r"@\S+")
 RE_EFFORT = re.compile(r"effort:(好做|一般|难)")
 RE_QX = re.compile(r"QX-(\d+)", re.IGNORECASE)
 
+# Not rendered as pills / stripped from titles in main dashboard.html (still parsed for stats).
+TAGS_OMIT_FROM_MAIN_HTML = frozenset({"qunxing", "frontend", "backend"})
+
 
 @dataclass
 class Task:
@@ -159,6 +162,12 @@ def task_qx_order(text: str) -> int:
     return int(m.group(1)) if m else 10_000
 
 
+def strip_bracket_tags(text: str) -> str:
+    """Remove `[tag]` markers from task text for dashboard display."""
+    s = RE_TAG.sub("", text)
+    return re.sub(r"  +", " ", s).strip()
+
+
 def collect_qunxing_tasks(sections: dict[str, list[Task]]) -> list[Task]:
     out: list[Task] = []
     for tasks in sections.values():
@@ -166,6 +175,119 @@ def collect_qunxing_tasks(sections: dict[str, list[Task]]) -> list[Task]:
             if "qunxing" in t.tags:
                 out.append(t)
     return out
+
+
+QUNXING_CSS = """
+    :root {
+      --bg: #fafafa;
+      --surface: #fff;
+      --text: #212529;
+      --muted: #6c757d;
+      --border: #e9ecef;
+      --link: #1c7ed6;
+      --radius: 6px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: system-ui, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      margin: 0;
+      color: var(--text);
+      background: var(--bg);
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+    .wrap { max-width: 880px; margin: 0 auto; padding: 1.25rem 1.25rem 2rem; }
+    header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      gap: 0.5rem 1rem;
+      margin-bottom: 0.75rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 1px solid var(--border);
+    }
+    h1 { font-size: 1.25rem; font-weight: 600; margin: 0; letter-spacing: -0.02em; }
+    .nav-top { margin-left: auto; }
+    .nav-top a { color: var(--link); text-decoration: none; font-size: 0.875rem; }
+    .nav-top a:hover { text-decoration: underline; }
+    .ts { width: 100%; color: var(--muted); font-size: 0.8125rem; margin: 0; order: 3; }
+    .sub { color: var(--muted); font-size: 0.875rem; margin: 0 0 0.5rem; line-height: 1.55; }
+    .sub + .sub { margin-bottom: 1rem; }
+    .kpi-row {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+    @media (max-width: 560px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+    .kpi {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 0.5rem 0.65rem;
+      border-left: 3px solid var(--c, #868e96);
+    }
+    .eff-tier-easy { --c: #2f9e44; }
+    .eff-tier-mid { --c: #f08c00; }
+    .eff-tier-hard { --c: #e03131; }
+    .eff-tier-unk { --c: #868e96; }
+    .kpi-label { font-size: 0.6875rem; color: var(--muted); text-transform: none; letter-spacing: 0.02em; }
+    .kpi-value { font-size: 1.25rem; font-weight: 600; line-height: 1.2; margin-top: 0.15rem; }
+    .eff-block {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 0.75rem 0;
+      margin-bottom: 0.75rem;
+      overflow: hidden;
+    }
+    .eff-block h2 {
+      margin: 0;
+      padding: 0 0.9rem 0.6rem;
+      font-size: 0.9375rem;
+      font-weight: 600;
+      border-bottom: 1px solid var(--border);
+    }
+    .count { color: var(--muted); font-weight: 400; font-size: 0.8125rem; }
+    .task-list { list-style: none; margin: 0; padding: 0; }
+    .task {
+      padding: 0.65rem 0.9rem;
+      font-size: 0.875rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .task:last-child { border-bottom: none; }
+    .task:nth-child(even) { background: #f8f9fa; }
+    .task-head {
+      margin-bottom: 0.35rem;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      flex-wrap: wrap;
+    }
+    .eff-badge {
+      font-size: 0.6875rem;
+      font-weight: 600;
+      padding: 0.1em 0.4em;
+      border-radius: 3px;
+      background: color-mix(in srgb, var(--c) 14%, transparent);
+      color: var(--c);
+    }
+    .board-sec {
+      font-size: 0.6875rem;
+      color: var(--muted);
+      background: transparent;
+      padding: 0;
+      border-radius: 0;
+    }
+    .task-title { line-height: 1.55; color: var(--text); }
+    .task-meta { margin-top: 0.35rem; color: var(--muted); font-size: 0.75rem; }
+    .task-meta .meta { opacity: 0.9; }
+    .task-done .task-title { text-decoration: line-through; color: var(--muted); }
+    .empty { padding: 0.65rem 0.9rem; color: var(--muted); font-size: 0.875rem; }
+    .footer { margin-top: 1.25rem; font-size: 0.75rem; color: var(--muted); }
+    .footer code { background: #f1f3f5; padding: 0.08em 0.35em; border-radius: 3px; font-size: 0.9em; }
+    .sub code, .footer code { font-family: ui-monospace, "Cascadia Code", monospace; }
+"""
 
 
 def build_qunxing_html(tasks: list[Task], ts: str) -> str:
@@ -197,10 +319,9 @@ def build_qunxing_html(tasks: list[Task], ts: str) -> str:
         items = buckets[e]
         lis = []
         for t in items:
-            tag_str = " ".join(
-                f'<span class="tag">{escape(x)}</span>' for x in (t.tags or []) if x != "qunxing"
-            )
+            title_disp = escape(strip_bracket_tags(t.text))
             men = f'<span class="meta">{escape(t.mention)}</span>' if t.mention else ""
+            meta_row = f'<div class="task-meta">{men}</div>' if men else ""
             done_cls = "task-done" if t.done else ""
             sec = f'<span class="board-sec">{escape(t.section)}</span>'
             elab = task_effort_label(t.text)
@@ -208,8 +329,8 @@ def build_qunxing_html(tasks: list[Task], ts: str) -> str:
             eff_badge = f'<span class="eff-badge" style="--c:{bcolor}">{escape(elab)}</span>'
             lis.append(
                 f'<li class="task {done_cls}"><div class="task-head">{eff_badge} {sec}</div>'
-                f'<div class="task-title">{escape(t.text)}</div>'
-                f'<div class="task-meta">{tag_str} {men}</div></li>'
+                f'<div class="task-title">{title_disp}</div>'
+                f"{meta_row}</li>"
             )
         blocks.append(
             f'<section class="eff-block {cls}"><h2><span class="eff-h2" style="color:{color}">{escape(e)}</span>'
@@ -225,40 +346,7 @@ def build_qunxing_html(tasks: list[Task], ts: str) -> str:
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>群兴任务 · pm-hub</title>
-  <style>
-    * {{ box-sizing: border-box; }}
-    body {{ font-family: system-ui, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; margin:0; color:#1a1a1a; background:#f0f3f8; }}
-    .wrap {{ max-width: 960px; margin: 0 auto; padding: 1.5rem; }}
-    header {{ display:flex; justify-content: space-between; align-items: baseline; flex-wrap:wrap; gap:.75rem; margin-bottom:1rem; }}
-    h1 {{ font-size:1.35rem; margin:0; }}
-    .nav-top a {{ color:#364fc7; text-decoration:none; font-size:0.9rem; }}
-    .nav-top a:hover {{ text-decoration:underline; }}
-    .ts {{ color:#666; font-size:0.85rem; }}
-    .sub {{ color:#495057; font-size:0.9rem; margin:0 0 1rem; }}
-    .kpi-row {{ display:grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap:0.6rem; margin-bottom:1.25rem; }}
-    @media (max-width: 600px) {{ .kpi-row {{ grid-template-columns: repeat(2, 1fr); }} }}
-    .kpi {{ background:#fff; border:1px solid #dee2e6; border-radius:8px; padding:0.6rem 0.75rem; border-left:4px solid var(--c, #868e96); }}
-    .eff-tier-easy {{ --c: #2f9e44; }}
-    .eff-tier-mid {{ --c: #f08c00; }}
-    .eff-tier-hard {{ --c: #e03131; }}
-    .eff-tier-unk {{ --c: #868e96; }}
-    .kpi-label {{ font-size:0.75rem; color:#495057; }}
-    .kpi-value {{ font-size:1.35rem; font-weight:700; }}
-    .eff-block {{ background:#fff; border:1px solid #dee2e6; border-radius:10px; padding:1rem 1.1rem; margin-bottom:1rem; }}
-    .eff-block h2 {{ margin:0 0 0.65rem; font-size:1rem; }}
-    .count {{ color:#868e96; font-weight:400; font-size:0.9rem; }}
-    .task-list {{ list-style:none; margin:0; padding:0; }}
-    .task {{ border-bottom:1px solid #eee; padding:0.55rem 0; font-size:0.88rem; }}
-    .task:last-child {{ border-bottom:none; }}
-    .task-head {{ margin-bottom:0.25rem; display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap; }}
-    .eff-badge {{ font-size:0.72rem; font-weight:600; padding:0.15em 0.45em; border-radius:4px; background:color-mix(in srgb, var(--c) 18%, #fff); color: var(--c); }}
-    .board-sec {{ font-size:0.72rem; color:#666; background:#f1f3f5; padding:0.12em 0.4em; border-radius:4px; }}
-    .task-title {{ line-height:1.45; }}
-    .task-meta {{ margin-top:0.3rem; color:#666; font-size:0.78rem; }}
-    .tag {{ display:inline-block; background:#e7f5ff; color:#1864ab; padding:0.1em 0.35em; border-radius:4px; margin-right:0.25rem; font-size:0.72rem; }}
-    .task-done .task-title {{ text-decoration: line-through; color:#868e96; }}
-    .footer {{ margin-top:1.5rem; font-size:0.78rem; color:#666; }}
-    .footer code {{ background:#e9ecef; padding:0.1em 0.35em; border-radius:3px; }}
+  <style>{QUNXING_CSS}
   </style>
 </head>
 <body>
@@ -268,7 +356,7 @@ def build_qunxing_html(tasks: list[Task], ts: str) -> str:
       <div class="nav-top"><a href="dashboard.html">← 总仪表盘</a></div>
       <div class="ts">最后生成：{escape(ts)}</div>
     </header>
-    <p class="sub">来源：<code>docs/board.md</code> 中带 <code>[qunxing]</code> 的任务；按 <code>effort:好做|一般|难</code> 分组，组内按 QX 编号排序。</p>
+    <p class="sub">来源：<code>docs/board.md</code> 中的群兴 QX 任务（看板行含 <code>qunxing</code> 短名标签）；按 <code>effort:好做|一般|难</code> 分组，组内按 QX 编号排序。</p>
     <p class="sub">合计 <strong>{total}</strong> 条（未完成 <strong>{open_n}</strong>）。</p>
     <div class="kpi-row">{"".join(kpi_cells)}</div>
     {"".join(blocks)}
@@ -323,11 +411,13 @@ def build_html(
         tasks = sections[sec]
         items = []
         for t in tasks:
-            tag_str = " ".join(f'<span class="tag">{escape(x)}</span>' for x in (t.tags or []))
+            title_disp = escape(strip_bracket_tags(t.text))
+            vis = [x for x in (t.tags or []) if x not in TAGS_OMIT_FROM_MAIN_HTML]
+            tag_str = " ".join(f'<span class="tag">{escape(x)}</span>' for x in vis)
             men = f'<span class="meta">{escape(t.mention)}</span>' if t.mention else ""
             done_cls = "task-done" if t.done else ""
             items.append(
-                f'<li class="task {done_cls}"><div class="task-title">{escape(t.text)}</div>'
+                f'<li class="task {done_cls}"><div class="task-title">{title_disp}</div>'
                 f'<div class="task-meta">{tag_str} {men}</div></li>'
             )
         col_html.append(
@@ -349,14 +439,14 @@ def build_html(
     for r in sorted(by_repo.keys()):
         o, d = by_repo[r].get("open", 0), by_repo[r].get("done", 0)
         repo_rows.append(
-            f'<div class="agg-line"><span class="rname">{escape(r)}</span><span class="rnum">进行中 {o} · 完成 {d}</span></div>'
+            f'<div class="agg-line"><span class="rname">{escape(r)}</span><span class="rnum">未完成 {o} · 完成 {d}</span></div>'
         )
     # People aggregate
     people_rows = []
     for p in sorted(by_mention.keys()):
         o, d = by_mention[p].get("open", 0), by_mention[p].get("done", 0)
         people_rows.append(
-            f'<div class="agg-line"><span class="pname">{escape(p)}</span><span class="pnum">进行中 {o} · 完成 {d}</span></div>'
+            f'<div class="agg-line"><span class="pname">{escape(p)}</span><span class="pnum">未完成 {o} · 完成 {d}</span></div>'
         )
     repo_whitelist = " ".join(sorted(valid_repos)) if valid_repos else "—"
     return f"""<!DOCTYPE html>

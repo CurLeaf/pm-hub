@@ -29,14 +29,14 @@ class TestParsers(unittest.TestCase):
 
     def test_parse_board_tags(self):
         md = """
-## 🟡 进行中
+## 🟡 正在实现
 - [ ] 任务 [backend] [frontend] @a 2026-01-01
 - [x] 完成 [backend]
         """
         valid = {"backend", "frontend"}
         sec, order = _gd.parse_board(md, valid)
-        self.assertIn("🟡 进行中", order)
-        tasks = sec["🟡 进行中"]
+        self.assertIn("🟡 正在实现", order)
+        tasks = sec["🟡 正在实现"]
         self.assertEqual(len(tasks), 2)
         self.assertFalse(tasks[0].done)
         self.assertEqual(tasks[0].tags, ["backend", "frontend"])
@@ -66,7 +66,7 @@ class TestParsers(unittest.TestCase):
         valid = {"qunxing", "backend"}
         md = """
 ## 🟢 待开始
-- [ ] A effort:好做 [qunxing][backend]
+- [ ] A effort:好做 [qunxing]
 - [ ] B [backend]
 """
         sec, _ = _gd.parse_board(md, valid)
@@ -74,11 +74,19 @@ class TestParsers(unittest.TestCase):
         self.assertEqual(len(qx), 1)
         self.assertIn("A", qx[0].text)
 
+    def test_strip_bracket_tags(self):
+        self.assertEqual(
+            _gd.strip_bracket_tags(
+                "群兴 QX-01 x effort:好做 [qunxing] @tbd 2026-04-26"
+            ),
+            "群兴 QX-01 x effort:好做 @tbd 2026-04-26",
+        )
+
     def test_build_qunxing_html(self):
         valid = {"qunxing", "backend"}
         sec, _ = _gd.parse_board(
-            "## S\n- [ ] 群兴 QX-02 b effort:一般 [qunxing][backend]\n"
-            "- [ ] 群兴 QX-01 a effort:好做 [qunxing][backend]\n",
+            "## S\n- [ ] 群兴 QX-02 b effort:一般 [qunxing]\n"
+            "- [ ] 群兴 QX-01 a effort:好做 [qunxing]\n",
             valid,
         )
         qx = _gd.collect_qunxing_tasks(sec)
@@ -86,6 +94,8 @@ class TestParsers(unittest.TestCase):
         self.assertIn("群兴任务", html)
         self.assertIn("QX-01", html)
         self.assertIn("好做", html)
+        self.assertNotIn("[qunxing]", html)
+        self.assertNotIn('class="tag"', html)
 
     def test_build_html(self):
         valid = {"backend"}
