@@ -1,6 +1,6 @@
 """
-Generate docs/dashboard.html and docs/dashboard-qunxing.html from repos.md,
-docs/board.md, docs/milestones.md.
+Generate docs/dashboard.html, docs/dashboard-qunxing.html, docs/dashboard-xlshangpin.html
+from repos.md, docs/board.md, docs/milestones.md.
 Single-file, stdlib only. Do not hand-edit the HTML output; regenerate after SSOT changes.
 """
 from __future__ import annotations
@@ -11,11 +11,13 @@ from html import escape
 from pathlib import Path
 from dataclasses import dataclass, field
 from collections import defaultdict
+from collections.abc import Callable
 from datetime import datetime, timezone
 
 HUB = Path(__file__).resolve().parent.parent
 OUT = HUB / "docs" / "dashboard.html"
 OUT_QUNXING = HUB / "docs" / "dashboard-qunxing.html"
+OUT_XLSHANGPIN = HUB / "docs" / "dashboard-xlshangpin.html"
 REPO_PATH = HUB / "repos.md"
 BOARD_PATH = HUB / "docs" / "board.md"
 MILESTONES_PATH = HUB / "docs" / "milestones.md"
@@ -27,8 +29,8 @@ RE_MENTION = re.compile(r"@\S+")
 RE_EFFORT = re.compile(r"effort:(好做|一般|难)")
 RE_QX = re.compile(r"QX-(\d+)", re.IGNORECASE)
 
-# Not rendered as pills / stripped from titles in main dashboard.html (still parsed for stats).
-TAGS_OMIT_FROM_MAIN_HTML = frozenset({"qunxing", "frontend", "backend"})
+# Project short names shown as pills; stack tags still omitted from titles/pills (parsed for stats).
+TAGS_OMIT_FROM_MAIN_HTML = frozenset({"frontend", "backend"})
 
 
 @dataclass
@@ -168,13 +170,114 @@ def strip_bracket_tags(text: str) -> str:
     return re.sub(r"  +", " ", s).strip()
 
 
-def collect_qunxing_tasks(sections: dict[str, list[Task]]) -> list[Task]:
+def collect_tasks_by_tag(sections: dict[str, list[Task]], tag: str) -> list[Task]:
     out: list[Task] = []
     for tasks in sections.values():
         for t in tasks:
-            if "qunxing" in t.tags:
+            if tag in t.tags:
                 out.append(t)
     return out
+
+
+def collect_qunxing_tasks(sections: dict[str, list[Task]]) -> list[Task]:
+    return collect_tasks_by_tag(sections, "qunxing")
+
+
+TEAM_HEATMAP_ROW_ORDER = ("群兴", "星链尚品", "其它", "(无标签)")
+
+
+def task_team_label(t: Task) -> str:
+    """产品线/团队行：群兴、星链尚品、其余带标签任务归为其它。"""
+    ts = set(t.tags or [])
+    if "qunxing" in ts:
+        return "群兴"
+    if "xlshangpin" in ts:
+        return "星链尚品"
+    if not ts:
+        return "(无标签)"
+    return "其它"
+
+
+def section_sort_key(sec: str) -> int:
+    order = "🔴🟡🟢✅⏳"
+    for o, c in enumerate(order):
+        if c in sec:
+            return o
+    return 99
+
+
+def heatmap_team_matrix(
+    sections: dict[str, list[Task]],
+) -> dict[str, dict[str, int]]:
+    m: dict[str, dict[str, int]] = defaultdict(lambda: defaultdict(int))
+    for sec_name, tasks in sections.items():
+        for t in tasks:
+            m[task_team_label(t)][sec_name] += 1
+    return {k: dict(v) for k, v in m.items()}
+
+
+def _mention_is_unassigned(mention: str | None) -> bool:
+    if not mention:
+        return True
+    return mention.strip().lower() == "@tbd"
+
+
+def heatmap_people_matrix(
+    sections: dict[str, list[Task]],
+) -> dict[str, dict[str, int]]:
+    m: dict[str, dict[str, int]] = defaultdict(lambda: defaultdict(int))
+    for sec_name, tasks in sections.items():
+        for t in tasks:
+            if t.mention and not _mention_is_unassigned(t.mention):
+                m[t.mention][sec_name] += 1
+    return {k: dict(v) for k, v in m.items()}
+
+
+def _ordered_heatmap_rows_team(matrix: dict[str, dict[str, int]]) -> list[str]:
+    active = [r for r in matrix if sum(matrix[r].values()) > 0]
+    out: list[str] = []
+    for r in TEAM_HEATMAP_ROW_ORDER:
+        if r in active:
+            out.append(r)
+    rest = sorted([r for r in active if r not in out])
+    return out + rest
+
+
+def _ordered_heatmap_rows_people(matrix: dict[str, dict[str, int]]) -> list[str]:
+    active = [r for r in matrix if sum(matrix[r].values()) > 0]
+    return sorted(active, key=lambda r: (-sum(matrix[r].values()), r))
+
+
+def render_heatmap_table(
+    matrix: dict[str, dict[str, int]],
+    col_keys: list[str],
+    row_labels: list[str],
+    row_header: str,
+) -> str:
+    if not row_labels:
+        return '<p class="heat-empty">（无数据）</p>'
+    max_v = 1
+    for r in row_labels:
+        for c in col_keys:
+            max_v = max(max_v, matrix[r].get(c, 0))
+    th_cols = "".join(f"<th>{escape(c)}</th>" for c in col_keys)
+    body_rows = []
+    for r in row_labels:
+        cells = []
+        for c in col_keys:
+            v = matrix[r].get(c, 0)
+            intensity = (v / max_v) if max_v else 0.0
+            tip = f"{r} · {c}：{v} 条"
+            cells.append(
+                f'<td class="hcell" style="--heat:{intensity:.6f}" title="{escape(tip)}">{v}</td>'
+            )
+        body_rows.append(
+            f'<tr><th scope="row" class="row-head">{escape(r)}</th>{"".join(cells)}</tr>'
+        )
+    return (
+        f'<table class="heatmap"><thead><tr><th class="corner">{escape(row_header)}</th>{th_cols}</tr></thead>'
+        f'<tbody>{"".join(body_rows)}</tbody></table>'
+    )
 
 
 QUNXING_CSS = """
@@ -207,9 +310,19 @@ QUNXING_CSS = """
       border-bottom: 1px solid var(--border);
     }
     h1 { font-size: 1.25rem; font-weight: 600; margin: 0; letter-spacing: -0.02em; }
-    .nav-top { margin-left: auto; }
+    .nav-top {
+      margin-left: auto;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.35rem 0.65rem;
+      justify-content: flex-end;
+      max-width: 100%;
+    }
     .nav-top a { color: var(--link); text-decoration: none; font-size: 0.875rem; }
     .nav-top a:hover { text-decoration: underline; }
+    .nav-top code { font-size: 0.8em; background: #f1f3f5; padding: 0.08em 0.3em; border-radius: 3px; }
+    .nav-sep { color: var(--muted); font-size: 0.75rem; user-select: none; }
     .ts { width: 100%; color: var(--muted); font-size: 0.8125rem; margin: 0; order: 3; }
     .sub { color: var(--muted); font-size: 0.875rem; margin: 0 0 0.5rem; line-height: 1.55; }
     .sub + .sub { margin-bottom: 1rem; }
@@ -290,14 +403,23 @@ QUNXING_CSS = """
 """
 
 
-def build_qunxing_html(tasks: list[Task], ts: str) -> str:
-    """[`qunxing`] tasks only, grouped by effort: 好做 → 一般 → 难 → 未标; QX-* numeric within group."""
+def build_effort_hub_html(
+    tasks: list[Task],
+    ts: str,
+    *,
+    page_title: str,
+    h1: str,
+    blurb: str,
+    nav_inner_html: str,
+    sort_within_effort: Callable[[Task], object],
+) -> str:
+    """Tasks grouped by effort: 好做 → 一般 → 难 → 未标; sort_within_effort per bucket."""
     order_eff = ["好做", "一般", "难", "未标"]
     buckets: dict[str, list[Task]] = {e: [] for e in order_eff}
     for t in tasks:
         buckets[task_effort_label(t.text)].append(t)
     for e in order_eff:
-        buckets[e].sort(key=lambda x: (task_qx_order(x.text), x.text))
+        buckets[e].sort(key=sort_within_effort)
 
     tier_style = {
         "好做": ("eff-tier-easy", "#2f9e44"),
@@ -345,18 +467,18 @@ def build_qunxing_html(tasks: list[Task], ts: str) -> str:
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>群兴任务 · pm-hub</title>
+  <title>{escape(page_title)}</title>
   <style>{QUNXING_CSS}
   </style>
 </head>
 <body>
   <div class="wrap">
     <header>
-      <h1>群兴任务</h1>
-      <div class="nav-top"><a href="dashboard.html">← 总仪表盘</a></div>
+      <h1>{escape(h1)}</h1>
+      <div class="nav-top">{nav_inner_html}</div>
       <div class="ts">最后生成：{escape(ts)}</div>
     </header>
-    <p class="sub">来源：<code>docs/board.md</code> 中的群兴 QX 任务（看板行含 <code>qunxing</code> 短名标签）；按 <code>effort:好做|一般|难</code> 分组，组内按 QX 编号排序。</p>
+    <p class="sub">{blurb}</p>
     <p class="sub">合计 <strong>{total}</strong> 条（未完成 <strong>{open_n}</strong>）。</p>
     <div class="kpi-row">{"".join(kpi_cells)}</div>
     {"".join(blocks)}
@@ -364,6 +486,48 @@ def build_qunxing_html(tasks: list[Task], ts: str) -> str:
   </div>
 </body>
 </html>"""
+
+
+def build_qunxing_html(tasks: list[Task], ts: str) -> str:
+    nav = (
+        '<a href="dashboard.html">← 总仪表盘</a>'
+        '<span class="nav-sep">·</span>'
+        '<a href="dashboard-xlshangpin.html"><code>xlshangpin</code> 星链尚品</a>'
+    )
+    blurb = (
+        "来源：<code>docs/board.md</code> 中含 <code>[qunxing]</code> 的任务；"
+        "按 <code>effort:好做|一般|难</code> 分组，组内按 QX 编号排序。"
+    )
+    return build_effort_hub_html(
+        tasks,
+        ts,
+        page_title="群兴任务 · pm-hub",
+        h1="群兴任务",
+        blurb=blurb,
+        nav_inner_html=nav,
+        sort_within_effort=lambda t: (task_qx_order(t.text), t.text),
+    )
+
+
+def build_xlshangpin_html(tasks: list[Task], ts: str) -> str:
+    nav = (
+        '<a href="dashboard.html">← 总仪表盘</a>'
+        '<span class="nav-sep">·</span>'
+        '<a href="dashboard-qunxing.html"><code>qunxing</code> 群兴</a>'
+    )
+    blurb = (
+        "来源：<code>docs/board.md</code> 中含 <code>[xlshangpin]</code> 的任务；"
+        "按 <code>effort:好做|一般|难</code> 分组，组内按标题排序。"
+    )
+    return build_effort_hub_html(
+        tasks,
+        ts,
+        page_title="星链尚品任务 · pm-hub",
+        h1="星链尚品任务",
+        blurb=blurb,
+        nav_inner_html=nav,
+        sort_within_effort=lambda t: (t.text.lower(),),
+    )
 
 
 def build_html(
@@ -398,14 +562,22 @@ def build_html(
             f'<div class="kpi"><div class="kpi-label">{escape(sec)}</div><div class="kpi-value">{counts.get(sec, 0)}</div></div>'
         )
     nav = "".join(nav_cells)
-    def sort_key(sec: str) -> int:
-        order = "🔴🟡🟢✅⏳"
-        for o, c in enumerate(order):
-            if c in sec:
-                return o
-        return 99
-
-    ordered_sections = sorted(sections.keys(), key=sort_key)
+    ordered_sections = sorted(sections.keys(), key=section_sort_key)
+    heat_col_keys = list(ordered_sections)
+    team_m = heatmap_team_matrix(sections)
+    people_m = heatmap_people_matrix(sections)
+    heat_team_html = render_heatmap_table(
+        team_m,
+        heat_col_keys,
+        _ordered_heatmap_rows_team(team_m),
+        "团队 ↓ ／ 分栏 →",
+    )
+    heat_people_html = render_heatmap_table(
+        people_m,
+        heat_col_keys,
+        _ordered_heatmap_rows_people(people_m),
+        "负责人 ↓ ／ 分栏 →",
+    )
     col_html = []
     for sec in ordered_sections:
         tasks = sections[sec]
@@ -487,6 +659,39 @@ def build_html(
     .mstat {{ text-align:right; color:#333; white-space:nowrap; }}
     .agg-line {{ display:flex; justify-content: space-between; padding:0.35rem 0; border-bottom:1px solid #f0f0f0; font-size:0.9rem; }}
     .rname, .pname {{ font-weight:500; }}
+    .heat-blurb {{ font-size:0.88rem; color:#495057; margin:0 0 0.75rem; line-height:1.45; }}
+    .heat-h3 {{ font-size:0.92rem; margin:1rem 0 0.35rem; color:#343a40; font-weight:600; }}
+    .heat-scroll {{ overflow-x:auto; margin-bottom:0.25rem; -webkit-overflow-scrolling:touch; }}
+    table.heatmap {{ width:100%; border-collapse:collapse; font-size:0.82rem; min-width:420px; }}
+    table.heatmap th, table.heatmap td {{ border:1px solid #dee2e6; padding:0.42rem 0.5rem; text-align:center; }}
+    table.heatmap thead th {{ background:#f1f3f5; font-weight:600; font-size:0.78rem; color:#495057; }}
+    table.heatmap th.corner {{ text-align:left; min-width:7rem; }}
+    table.heatmap tbody th.row-head {{ text-align:left; background:#f8f9fa; font-weight:600; white-space:nowrap; }}
+    table.heatmap td.hcell {{
+      --heat: 0;
+      background-color: hsl(211, 72%, calc(96% - var(--heat) * 38%));
+      color: #212529;
+      font-variant-numeric: tabular-nums;
+      font-weight:600;
+    }}
+    .heat-empty {{ font-size:0.88rem; color:#868e96; margin:0.25rem 0 0.75rem; }}
+    nav.project-hub {{
+      display:flex; flex-wrap:wrap; align-items:center; gap:0.45rem;
+      margin:0 0 1rem; padding:0.65rem 0.85rem;
+      background:#fff; border:1px solid #e2e3e5; border-radius:8px;
+    }}
+    .project-hub-label {{ font-size:0.72rem; font-weight:600; color:#495057; margin-right:0.15rem; }}
+    a.project-chip {{
+      display:inline-flex; align-items:center; gap:0.35rem;
+      padding:0.38rem 0.65rem; border-radius:6px; text-decoration:none;
+      font-size:0.82rem; border:1px solid #dee2e6; background:#f8f9fa; color:#212529;
+    }}
+    a.project-chip:hover {{ border-color:#4dabf7; background:#e7f5ff; }}
+    a.project-chip code {{
+      font-size:0.76rem; background:#e9ecef; padding:0.1em 0.35em; border-radius:4px; color:#495057;
+    }}
+    a.project-chip.project-qunxing {{ border-left:3px solid #e03131; }}
+    a.project-chip.project-xl {{ border-left:3px solid #2f9e44; }}
     .footer {{ margin-top:2rem; font-size:0.8rem; color:#666; }}
     .footer code {{ background:#eee; padding:0.1em 0.3em; border-radius:3px; }}
   </style>
@@ -497,8 +702,19 @@ def build_html(
       <h1>项目仪表盘</h1>
       <div class="ts">最后生成：{escape(ts)}</div>
     </header>
+    <nav class="project-hub" aria-label="按项目进入专页">
+      <span class="project-hub-label">项目</span>
+      <a class="project-chip project-qunxing" href="dashboard-qunxing.html"><code>qunxing</code> 群兴</a>
+      <a class="project-chip project-xl" href="dashboard-xlshangpin.html"><code>xlshangpin</code> 星链尚品</a>
+    </nav>
     <p class="footer">已登记仓库短名（标签白名单来源）：<code>{escape(repo_whitelist)}</code></p>
     <div class="kpi-row">{nav}</div>
+    <h2>负载热力图</h2>
+    <p class="heat-blurb">按看板分栏统计任务条数（未完成与已完成均计入）。<strong>团队</strong>行按产品线归类（含 <code>qunxing</code> 为群兴、<code>xlshangpin</code> 为星链尚品，其余有标签为其它）；<strong>负责人</strong>按 <code>@</code> 提及汇总，<strong>不含</strong> <code>@tbd</code>（待分配仍体现在团队表与下方看板）。颜色在同一表内越深表示该格任务越多。任务列表中 <code>qunxing</code> / <code>xlshangpin</code> 以标签展示，与顶部「项目」入口一致。</p>
+    <h3 class="heat-h3">团队（产品线）</h3>
+    <div class="heat-scroll">{heat_team_html}</div>
+    <h3 class="heat-h3">负责人</h3>
+    <div class="heat-scroll">{heat_people_html}</div>
     <h2>看板</h2>
     <div class="columns">
       {''.join(col_html)}
@@ -509,7 +725,7 @@ def build_html(
     <div class="panel">{''.join(repo_rows) or "<p>（无带标签任务）</p>"}</div>
     <h2>成员负载</h2>
     <div class="panel">{''.join(people_rows) or "<p>（无 @ 提及）</p>"}</div>
-    <p class="footer"><a href="dashboard-qunxing.html">群兴任务专页</a>（按 effort 分组）</p>
+    <p class="footer">项目专页（按 effort 分组）：<a href="dashboard-qunxing.html"><code>qunxing</code> 群兴</a> · <a href="dashboard-xlshangpin.html"><code>xlshangpin</code> 星链尚品</a></p>
     <p class="footer">由 <code>python scripts/gen_dashboard.py</code> 从 Markdown 源生成，请勿手改本文件。</p>
   </div>
 </body>
@@ -538,6 +754,10 @@ def main() -> int:
     qx_html = build_qunxing_html(qx_tasks, ts)
     OUT_QUNXING.write_text(qx_html, encoding="utf-8")
     print(f"Wrote {OUT_QUNXING.relative_to(HUB)}")
+    xls_tasks = collect_tasks_by_tag(sections, "xlshangpin")
+    xls_html = build_xlshangpin_html(xls_tasks, ts)
+    OUT_XLSHANGPIN.write_text(xls_html, encoding="utf-8")
+    print(f"Wrote {OUT_XLSHANGPIN.relative_to(HUB)}")
     return 0
 
 

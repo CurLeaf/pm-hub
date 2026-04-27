@@ -35,4 +35,4 @@ jobs:
         run: python scripts/gen_dashboard.py
 
       - name: Require committed HTML to match generated output
-        run: git diff --exit-code -- docs/dashboard.html docs/dashboard-qunxing.html
+        run: git diff --exit-code -- docs/dashboard.html docs/dashboard-qunxing.html docs/dashboard-xlshangpin.html

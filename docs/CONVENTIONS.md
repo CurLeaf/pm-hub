@@ -28,7 +28,7 @@
 ```
 
 - **仓库标签**：一个或多个 `[短名]`，短名**必须**来自 `repos.md` 表第一列。
-- **群兴 QX 任务**：只需写 `[qunxing]`，**不要**再叠写 `[frontend][backend]`。总仪表盘 HTML 中不展示 `qunxing` / `frontend` / `backend` 标签（仍参与解析与汇总）；群兴专页任务标题一律去掉方括号标签展示。
+- **群兴 QX 任务**：只需写 `[qunxing]`，**不要**再叠写 `[frontend][backend]`。总仪表盘任务行展示 `qunxing` / `xlshangpin` 短名标签（与顶部项目入口一致）；`frontend` / `backend` 仍不在任务行展示（参与解析与汇总）。各项目专页任务标题去掉方括号标签展示。
 - **@owner**：可选，GitHub handle 或中文称呼，不校验。
 - **日期**：可选，格式 `YYYY-MM-DD`（`-` 分隔）。
 - **链接**：可选，用圆括号；常用于 PR 或 design doc。
@@ -51,6 +51,7 @@
 
 ## 自动产物（HTML）
 
-- **`docs/dashboard.html`**：全量看板与里程碑等；**只读**来源：`repos.md`、`docs/board.md`、`docs/milestones.md`。
+- **`docs/dashboard.html`**：全量看板、顶部 **项目** 入口（`qunxing` / `xlshangpin` 专页）、里程碑、**负载热力图**（团队产品线 × 看板分栏、负责人 × 看板分栏，颜色表示相对任务量）等；**只读**来源：`repos.md`、`docs/board.md`、`docs/milestones.md`。
 - **`docs/dashboard-qunxing.html`**：仅含看板中标注 `[qunxing]` 的群兴 QX 任务，按 `effort:好做|一般|难` 分组展示。
+- **`docs/dashboard-xlshangpin.html`**：仅含看板中标注 `[xlshangpin]` 的任务，按 `effort:好做|一般|难` 分组展示。
 - **不要**手改上述 HTML；均由 `python scripts/gen_dashboard.py` 生成后一并提交。

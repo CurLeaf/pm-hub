@@ -1,6 +1,6 @@
 # pm-hub
 
-多仓库产品/项目的中枢：任务看板、里程碑、仓库注册与决策记在以 Markdown 为唯一事实来源；`docs/dashboard.html` 为全量静态仪表盘，`docs/dashboard-qunxing.html` 为群兴任务专页（按 effort 分组）。
+多仓库产品/项目的中枢：任务看板、里程碑、仓库注册与决策记在以 Markdown 为唯一事实来源；`docs/dashboard.html` 为全量静态仪表盘（顶部可从 **项目** 入口进入各专页）；`docs/dashboard-qunxing.html`（`qunxing` 群兴）、`docs/dashboard-xlshangpin.html`（`xlshangpin` 星链尚品）为按 effort 分组的项目专页。
 
 ## 快速开始
 
@@ -15,7 +15,7 @@
 python scripts/gen_dashboard.py
 ```
 
-将 `docs/dashboard.html`、`docs/dashboard-qunxing.html` 与 Markdown 源一并提交。CI 会重新运行生成器并 `git diff` 检查，避免手改或遗漏再生成。
+将 `docs/dashboard.html`、`docs/dashboard-qunxing.html`、`docs/dashboard-xlshangpin.html` 与 Markdown 源一并提交。CI 会重新运行生成器并 `git diff` 检查，避免手改或遗漏再生成。
 
 ## 测试
 
