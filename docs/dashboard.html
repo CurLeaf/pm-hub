@@ -7,7 +7,7 @@
   <style>
     * { box-sizing: border-box; }
     body { font-family: system-ui, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; margin:0; color:#1a1a1a; background:#f6f7f9; }
-    .wrap { max-width: 1100px; margin: 0 auto; padding: 1.5rem; }
+    .wrap { max-width: 1280px; margin: 0 auto; padding: 1.5rem; }
     header { display:flex; justify-content: space-between; align-items: baseline; margin-bottom: 1rem; flex-wrap:wrap; gap:.5rem; }
     h1 { font-size:1.25rem; margin:0; }
     .ts { color:#666; font-size:0.9rem; }
@@ -16,10 +16,34 @@
     .kpi-label { font-size:0.8rem; color:#555; }
     .kpi-value { font-size:1.5rem; font-weight:600; }
     h2 { font-size:1rem; margin:1.5rem 0 0.5rem; color:#333; }
-    .columns { display:grid; grid-template-columns: 1fr; gap:1rem; }
-    @media (min-width: 800px) { .columns { grid-template-columns: 1fr 1fr; } }
-    .column { background:#fff; border:1px solid #e2e3e5; border-radius:8px; padding:1rem; }
-    .column h3 { margin:0 0 0.5rem; font-size:0.95rem; }
+    .columns {
+      display:grid;
+      grid-template-columns: 1fr;
+      gap:1rem;
+      align-items: stretch;
+    }
+    @media screen and (min-width: 900px) { .columns { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+    .column {
+      background:#fff;
+      border:1px solid #e2e3e5;
+      border-radius:8px;
+      padding:1rem;
+      display:flex;
+      flex-direction:column;
+      min-height:0;
+    }
+    @media screen {
+      .column {
+        height: min(32rem, 58vh);
+      }
+      .column .task-list {
+        flex:1;
+        min-height:0;
+        overflow-y:auto;
+        -webkit-overflow-scrolling:touch;
+      }
+    }
+    .column h3 { margin:0 0 0.5rem; font-size:0.95rem; flex-shrink:0; }
     .task-list { list-style:none; margin:0; padding:0; }
     .task { border-bottom:1px solid #eee; padding:0.5rem 0; font-size:0.9rem; }
     .task:last-child { border-bottom:none; }
@@ -28,14 +52,14 @@
     .tag { display:inline-block; background:#eef2ff; color:#364fc7; padding:0.1em 0.4em; border-radius:4px; margin-right:0.3rem; font-size:0.75rem; }
     .task-done .task-title { text-decoration: line-through; color:#888; }
     .panel { background:#fff; border:1px solid #e2e3e5; border-radius:8px; padding:1rem; margin-top:0.5rem; }
-    .milestone { display:grid; grid-template-columns: 1fr 3fr 120px; gap:0.5rem; align-items:center; margin:0.4rem 0; font-size:0.9rem; }
-    @media (max-width: 700px) { .milestone { grid-template-columns: 1fr; } }
-    .mbar-outer { background:#e9ecef; height:8px; border-radius:4px; overflow:hidden; }
-    .mbar-inner { background:#2f9e44; height:8px; border-radius:4px; }
-    .mdate { color:#666; font-size:0.85em; margin-left:0.35em; }
-    .mstat { text-align:right; color:#333; white-space:nowrap; }
-    .agg-line { display:flex; justify-content: space-between; padding:0.35rem 0; border-bottom:1px solid #f0f0f0; font-size:0.9rem; }
-    .rname, .pname { font-weight:500; }
+    .burndown-meta { font-size:0.9rem; color:#333; margin:0 0 0.5rem; line-height:1.5; }
+    .burndown-legend { display:flex; flex-wrap:wrap; gap:0.75rem 1rem; margin:0 0 0.35rem; font-size:0.82rem; color:#495057; }
+    .burndown-legend .lg { display:inline-flex; align-items:center; gap:0.35rem; }
+    .burndown-legend .dot { width:0.55rem; height:0.55rem; border-radius:50%; display:inline-block; }
+    .burndown-legend .dot-rem { background:#1971c2; }
+    .burndown-legend .dot-done { background:#2f9e44; }
+    .burndown-chart-wrap { width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch; margin-top:0.25rem; }
+    .burndown-svg { display:block; width:100%; max-width:720px; height:auto; margin:0 auto; }
     .heat-blurb { font-size:0.88rem; color:#495057; margin:0 0 0.75rem; line-height:1.45; }
     .heat-h3 { font-size:0.92rem; margin:1rem 0 0.35rem; color:#343a40; font-weight:600; }
     .heat-scroll { overflow-x:auto; margin-bottom:0.25rem; -webkit-overflow-scrolling:touch; }
@@ -49,9 +73,16 @@
       background-color: hsl(211, 72%, calc(96% - var(--heat) * 38%));
       color: #212529;
       font-variant-numeric: tabular-nums;
-      font-weight:600;
+      font-weight:700;
+      white-space: nowrap;
+    }
+    table.heatmap td.hcell .heat-w {
+      font-size: 0.88em;
+      font-weight: 600;
+      color: #495057;
     }
     .heat-empty { font-size:0.88rem; color:#868e96; margin:0.25rem 0 0.75rem; }
+    h2 .heat-scale { font-size:0.78em; font-weight:400; color:#6c757d; margin-left:0.35em; }
     nav.project-hub {
       display:flex; flex-wrap:wrap; align-items:center; gap:0.45rem;
       margin:0 0 1rem; padding:0.65rem 0.85rem;
@@ -69,6 +100,27 @@
     }
     a.project-chip.project-qunxing { border-left:3px solid #e03131; }
     a.project-chip.project-xl { border-left:3px solid #2f9e44; }
+    @media print {
+      body { background:#fff; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .wrap { max-width:none; padding:0.75rem; }
+      .heat-scroll,
+      .burndown-chart-wrap { overflow:visible !important; }
+      table.heatmap { min-width:0; width:100%; page-break-inside:auto; }
+      .columns { grid-template-columns:1fr !important; gap:0.75rem; }
+      .column {
+        height:auto !important;
+        max-height:none !important;
+        min-height:0;
+        break-inside:auto;
+        page-break-inside:auto;
+      }
+      .column .task-list {
+        flex:none !important;
+        overflow:visible !important;
+        max-height:none !important;
+      }
+      a.project-chip { border:1px solid #ccc; }
+    }
     .footer { margin-top:2rem; font-size:0.8rem; color:#666; }
     .footer code { background:#eee; padding:0.1em 0.3em; border-radius:3px; }
   </style>
@@ -77,32 +129,42 @@
   <div class="wrap">
     <header>
       <h1>项目仪表盘</h1>
-      <div class="ts">最后生成：2026-04-27 10:31 UTC</div>
+      <div class="ts">最后生成：2026-04-28 01:55 UTC</div>
     </header>
     <nav class="project-hub" aria-label="按项目进入专页">
       <span class="project-hub-label">项目</span>
       <a class="project-chip project-qunxing" href="dashboard-qunxing.html"><code>qunxing</code> 群兴</a>
-      <a class="project-chip project-xl" href="dashboard-xlshangpin.html"><code>xlshangpin</code> 星链尚品</a>
+      <a class="project-chip project-xl" href="dashboard-xlshangpin.html"><code>xlshangpin</code> 兴链尚品</a>
     </nav>
-    <p class="footer">已登记仓库短名（标签白名单来源）：<code>backend frontend infra mobile qunxing xlshangpin</code></p>
-    <div class="kpi-row"><div class="kpi"><div class="kpi-label">🟡 正在实现</div><div class="kpi-value">8</div></div><div class="kpi"><div class="kpi-label">🟢 待开始</div><div class="kpi-value">17</div></div><div class="kpi"><div class="kpi-label">✅ 已完成</div><div class="kpi-value">6</div></div></div>
-    <h2>负载热力图</h2>
-    <p class="heat-blurb">按看板分栏统计任务条数（未完成与已完成均计入）。<strong>团队</strong>行按产品线归类（含 <code>qunxing</code> 为群兴、<code>xlshangpin</code> 为星链尚品，其余有标签为其它）；<strong>负责人</strong>按 <code>@</code> 提及汇总，<strong>不含</strong> <code>@tbd</code>（待分配仍体现在团队表与下方看板）。颜色在同一表内越深表示该格任务越多。任务列表中 <code>qunxing</code> / <code>xlshangpin</code> 以标签展示，与顶部「项目」入口一致。</p>
+    <div class="kpi-row"><div class="kpi"><div class="kpi-label">🟡 正在实现</div><div class="kpi-value">5</div></div><div class="kpi"><div class="kpi-label">🟢 待开始</div><div class="kpi-value">18</div></div><div class="kpi"><div class="kpi-label">✅ 已完成</div><div class="kpi-value">16</div></div></div>
+    <h2>负载热力图<span class="heat-scale">（主数字为条数，括号内为难度加权；好做1 · 一般2 · 难3 · 未标1）</span></h2>
     <h3 class="heat-h3">团队（产品线）</h3>
-    <div class="heat-scroll"><table class="heatmap"><thead><tr><th class="corner">团队 ↓ ／ 分栏 →</th><th>🟡 正在实现</th><th>🟢 待开始</th><th>✅ 已完成</th></tr></thead><tbody><tr><th scope="row" class="row-head">群兴</th><td class="hcell" style="--heat:0.437500" title="群兴 · 🟡 正在实现：7 条">7</td><td class="hcell" style="--heat:1.000000" title="群兴 · 🟢 待开始：16 条">16</td><td class="hcell" style="--heat:0.250000" title="群兴 · ✅ 已完成：4 条">4</td></tr><tr><th scope="row" class="row-head">星链尚品</th><td class="hcell" style="--heat:0.062500" title="星链尚品 · 🟡 正在实现：1 条">1</td><td class="hcell" style="--heat:0.000000" title="星链尚品 · 🟢 待开始：0 条">0</td><td class="hcell" style="--heat:0.062500" title="星链尚品 · ✅ 已完成：1 条">1</td></tr><tr><th scope="row" class="row-head">其它</th><td class="hcell" style="--heat:0.000000" title="其它 · 🟡 正在实现：0 条">0</td><td class="hcell" style="--heat:0.062500" title="其它 · 🟢 待开始：1 条">1</td><td class="hcell" style="--heat:0.062500" title="其它 · ✅ 已完成：1 条">1</td></tr></tbody></table></div>
+    <div class="heat-scroll"><table class="heatmap"><thead><tr><th class="corner">团队 ↓ ／ 分栏 →</th><th>🟡 正在实现</th><th>🟢 待开始</th><th>✅ 已完成</th></tr></thead><tbody><tr><th scope="row" class="row-head">群兴</th><td class="hcell" style="--heat:0.228571" title="群兴 · 🟡 正在实现：5 条，难度加权 8（好做1·一般2·难3·未标1）">5<span class="heat-w"> (8)</span></td><td class="hcell" style="--heat:1.000000" title="群兴 · 🟢 待开始：18 条，难度加权 35（好做1·一般2·难3·未标1）">18<span class="heat-w"> (35)</span></td><td class="hcell" style="--heat:0.628571" title="群兴 · ✅ 已完成：13 条，难度加权 22（好做1·一般2·难3·未标1）">13<span class="heat-w"> (22)</span></td></tr><tr><th scope="row" class="row-head">兴链尚品</th><td class="hcell" style="--heat:0.000000" title="兴链尚品 · 🟡 正在实现：0 条，难度加权 0（好做1·一般2·难3·未标1）">0<span class="heat-w"> (0)</span></td><td class="hcell" style="--heat:0.000000" title="兴链尚品 · 🟢 待开始：0 条，难度加权 0（好做1·一般2·难3·未标1）">0<span class="heat-w"> (0)</span></td><td class="hcell" style="--heat:0.057143" title="兴链尚品 · ✅ 已完成：2 条，难度加权 2（好做1·一般2·难3·未标1）">2<span class="heat-w"> (2)</span></td></tr><tr><th scope="row" class="row-head">其它</th><td class="hcell" style="--heat:0.000000" title="其它 · 🟡 正在实现：0 条，难度加权 0（好做1·一般2·难3·未标1）">0<span class="heat-w"> (0)</span></td><td class="hcell" style="--heat:0.000000" title="其它 · 🟢 待开始：0 条，难度加权 0（好做1·一般2·难3·未标1）">0<span class="heat-w"> (0)</span></td><td class="hcell" style="--heat:0.028571" title="其它 · ✅ 已完成：1 条，难度加权 1（好做1·一般2·难3·未标1）">1<span class="heat-w"> (1)</span></td></tr></tbody></table></div>
     <h3 class="heat-h3">负责人</h3>
-    <div class="heat-scroll"><table class="heatmap"><thead><tr><th class="corner">负责人 ↓ ／ 分栏 →</th><th>🟡 正在实现</th><th>🟢 待开始</th><th>✅ 已完成</th></tr></thead><tbody><tr><th scope="row" class="row-head">@CurLeaf</th><td class="hcell" style="--heat:1.000000" title="@CurLeaf · 🟡 正在实现：4 条">4</td><td class="hcell" style="--heat:0.000000" title="@CurLeaf · 🟢 待开始：0 条">0</td><td class="hcell" style="--heat:0.750000" title="@CurLeaf · ✅ 已完成：3 条">3</td></tr><tr><th scope="row" class="row-head">@俊波</th><td class="hcell" style="--heat:0.000000" title="@俊波 · 🟡 正在实现：0 条">0</td><td class="hcell" style="--heat:0.000000" title="@俊波 · 🟢 待开始：0 条">0</td><td class="hcell" style="--heat:0.750000" title="@俊波 · ✅ 已完成：3 条">3</td></tr><tr><th scope="row" class="row-head">@嘉松</th><td class="hcell" style="--heat:0.500000" title="@嘉松 · 🟡 正在实现：2 条">2</td><td class="hcell" style="--heat:0.000000" title="@嘉松 · 🟢 待开始：0 条">0</td><td class="hcell" style="--heat:0.000000" title="@嘉松 · ✅ 已完成：0 条">0</td></tr><tr><th scope="row" class="row-head">@书达</th><td class="hcell" style="--heat:0.250000" title="@书达 · 🟡 正在实现：1 条">1</td><td class="hcell" style="--heat:0.000000" title="@书达 · 🟢 待开始：0 条">0</td><td class="hcell" style="--heat:0.000000" title="@书达 · ✅ 已完成：0 条">0</td></tr><tr><th scope="row" class="row-head">@凯杰</th><td class="hcell" style="--heat:0.250000" title="@凯杰 · 🟡 正在实现：1 条">1</td><td class="hcell" style="--heat:0.000000" title="@凯杰 · 🟢 待开始：0 条">0</td><td class="hcell" style="--heat:0.000000" title="@凯杰 · ✅ 已完成：0 条">0</td></tr></tbody></table></div>
+    <div class="heat-scroll"><table class="heatmap"><thead><tr><th class="corner">负责人 ↓ ／ 分栏 →</th><th>🟡 正在实现</th><th>🟢 待开始</th><th>✅ 已完成</th></tr></thead><tbody><tr><th scope="row" class="row-head">@CurLeaf</th><td class="hcell" style="--heat:0.307692" title="@CurLeaf · 🟡 正在实现：2 条，难度加权 4（好做1·一般2·难3·未标1）">2<span class="heat-w"> (4)</span></td><td class="hcell" style="--heat:0.230769" title="@CurLeaf · 🟢 待开始：2 条，难度加权 3（好做1·一般2·难3·未标1）">2<span class="heat-w"> (3)</span></td><td class="hcell" style="--heat:1.000000" title="@CurLeaf · ✅ 已完成：8 条，难度加权 13（好做1·一般2·难3·未标1）">8<span class="heat-w"> (13)</span></td></tr><tr><th scope="row" class="row-head">@嘉松</th><td class="hcell" style="--heat:0.153846" title="@嘉松 · 🟡 正在实现：1 条，难度加权 2（好做1·一般2·难3·未标1）">1<span class="heat-w"> (2)</span></td><td class="hcell" style="--heat:0.000000" title="@嘉松 · 🟢 待开始：0 条，难度加权 0（好做1·一般2·难3·未标1）">0<span class="heat-w"> (0)</span></td><td class="hcell" style="--heat:0.461538" title="@嘉松 · ✅ 已完成：3 条，难度加权 6（好做1·一般2·难3·未标1）">3<span class="heat-w"> (6)</span></td></tr><tr><th scope="row" class="row-head">@俊波</th><td class="hcell" style="--heat:0.076923" title="@俊波 · 🟡 正在实现：1 条，难度加权 1（好做1·一般2·难3·未标1）">1<span class="heat-w"> (1)</span></td><td class="hcell" style="--heat:0.000000" title="@俊波 · 🟢 待开始：0 条，难度加权 0（好做1·一般2·难3·未标1）">0<span class="heat-w"> (0)</span></td><td class="hcell" style="--heat:0.307692" title="@俊波 · ✅ 已完成：3 条，难度加权 4（好做1·一般2·难3·未标1）">3<span class="heat-w"> (4)</span></td></tr><tr><th scope="row" class="row-head">@书达</th><td class="hcell" style="--heat:0.076923" title="@书达 · 🟡 正在实现：1 条，难度加权 1（好做1·一般2·难3·未标1）">1<span class="heat-w"> (1)</span></td><td class="hcell" style="--heat:0.076923" title="@书达 · 🟢 待开始：1 条，难度加权 1（好做1·一般2·难3·未标1）">1<span class="heat-w"> (1)</span></td><td class="hcell" style="--heat:0.076923" title="@书达 · ✅ 已完成：1 条，难度加权 1（好做1·一般2·难3·未标1）">1<span class="heat-w"> (1)</span></td></tr><tr><th scope="row" class="row-head">@凯杰</th><td class="hcell" style="--heat:0.000000" title="@凯杰 · 🟡 正在实现：0 条，难度加权 0（好做1·一般2·难3·未标1）">0<span class="heat-w"> (0)</span></td><td class="hcell" style="--heat:0.000000" title="@凯杰 · 🟢 待开始：0 条，难度加权 0（好做1·一般2·难3·未标1）">0<span class="heat-w"> (0)</span></td><td class="hcell" style="--heat:0.076923" title="@凯杰 · ✅ 已完成：1 条，难度加权 1（好做1·一般2·难3·未标1）">1<span class="heat-w"> (1)</span></td></tr></tbody></table></div>
     <h2>看板</h2>
     <div class="columns">
-      <div class="column"><h3>🟡 正在实现</h3><ul class="task-list"><li class="task "><div class="task-title">星链尚品：dashboard 搭建 effort:好做 @凯杰 2026-04-27</div><div class="task-meta"><span class="tag">xlshangpin</span> <span class="meta">@凯杰</span></div></li><li class="task "><div class="task-title">群兴 QX-08 面单编辑器接入 effort:好做 @CurLeaf 2026-04-26</div><div class="task-meta"><span class="tag">qunxing</span> <span class="meta">@CurLeaf</span></div></li><li class="task "><div class="task-title">群兴 QX-08 快速发货流程上线 effort:好做 @书达 2026-04-26</div><div class="task-meta"><span class="tag">qunxing</span> <span class="meta">@书达</span></div></li><li class="task "><div class="task-title">群兴 QX-18 Ozon 类目变更同步与系统侧适配 effort:难 @嘉松 2026-04-26</div><div class="task-meta"><span class="tag">qunxing</span> <span class="meta">@嘉松</span></div></li><li class="task "><div class="task-title">群兴 QX-04 定价策略：审核时可修改 effort:好做 @嘉松 2026-04-26</div><div class="task-meta"><span class="tag">qunxing</span> <span class="meta">@嘉松</span></div></li><li class="task "><div class="task-title">群兴 QX-07 异常商品表单编辑 effort:好做 @CurLeaf 2026-04-26</div><div class="task-meta"><span class="tag">qunxing</span> <span class="meta">@CurLeaf</span></div></li><li class="task "><div class="task-title">群兴 QX-22 分中心邀请普通合伙人流程 · 需求分析 effort:难 @CurLeaf 2026-04-26 (docs/qunxing-qx22-invite.md)</div><div class="task-meta"><span class="tag">qunxing</span> <span class="meta">@CurLeaf</span></div></li><li class="task "><div class="task-title">群兴 QX-24 兴图：订单列表优化（参考星链尚品） effort:一般 @CurLeaf 2026-04-27</div><div class="task-meta"><span class="tag">qunxing</span> <span class="meta">@CurLeaf</span></div></li></ul></div><div class="column"><h3>🟢 待开始</h3><ul class="task-list"><li class="task "><div class="task-title">群兴 QX-10 平台商品卡编辑：热评网页截图 + AI 辅助输入 effort:好做 @tbd 2026-04-26</div><div class="task-meta"><span class="tag">qunxing</span> <span class="meta">@tbd</span></div></li><li class="task "><div class="task-title">群兴 QX-11 兴图：生成图片能力支持手机账号密码登录 effort:好做 @tbd 2026-04-26</div><div class="task-meta"><span class="tag">qunxing</span> <span class="meta">@tbd</span></div></li><li class="task "><div class="task-title">群兴 QX-12 分中心：邀请成员时审核员工档案，管理者通过后方可操作；所有者可改员工信息 effort:好做 @tbd 2026-04-26</div><div class="task-meta"><span class="tag">qunxing</span> <span class="meta">@tbd</span></div></li><li class="task "><div class="task-title">群兴 QX-13 商品刊登页：按用户关联规则筛选店铺（创建者/被分配者/分配与执照规则待与甲方确认）+ 长列表样式优化 effort:好做 @tbd 2026-04-26</div><div class="task-meta"><span class="tag">qunxing</span> <span class="meta">@tbd</span></div></li><li class="task "><div class="task-title">群兴 QX-15 全局 Input：移除垂直 padding（py） effort:好做 @tbd 2026-04-26</div><div class="task-meta"><span class="tag">qunxing</span> <span class="meta">@tbd</span></div></li><li class="task "><div class="task-title">群兴 QX-02 商品刊登：图片顺序打乱；货号刊登加密与回写解密 effort:一般 @tbd 2026-04-26</div><div class="task-meta"><span class="tag">qunxing</span> <span class="meta">@tbd</span></div></li><li class="task "><div class="task-title">群兴 QX-03 已发货订单列表展示平台物流单号 effort:一般 @tbd 2026-04-26</div><div class="task-meta"><span class="tag">qunxing</span> <span class="meta">@tbd</span></div></li><li class="task "><div class="task-title">群兴 QX-05 定价策略生成图：删除/编辑/指定图重生成（低优先级） effort:一般 @tbd 2026-04-26</div><div class="task-meta"><span class="tag">qunxing</span> <span class="meta">@tbd</span></div></li><li class="task "><div class="task-title">群兴 QX-14 Ozon：非邮政物流信息与佣金计算更新（按新文档） effort:一般 @tbd 2026-04-26</div><div class="task-meta"><span class="tag">qunxing</span> <span class="meta">@tbd</span></div></li><li class="task "><div class="task-title">群兴 QX-23 分中心：额度设置（员工数量、店铺数量等） effort:一般 @tbd 2026-04-26</div><div class="task-meta"><span class="tag">qunxing</span> <span class="meta">@tbd</span></div></li><li class="task "><div class="task-title">群兴 QX-06 平台商品同步：编辑/归档/下架等与平台在售状态一致 effort:难 @tbd 2026-04-26</div><div class="task-meta"><span class="tag">qunxing</span> <span class="meta">@tbd</span></div></li><li class="task "><div class="task-title">群兴 QX-09 平台商品卡图合成视频 effort:难 @tbd 2026-04-26</div><div class="task-meta"><span class="tag">qunxing</span> <span class="meta">@tbd</span></div></li><li class="task "><div class="task-title">群兴 QX-16 平台订单退货流程接入 effort:难 @tbd 2026-04-26</div><div class="task-meta"><span class="tag">qunxing</span> <span class="meta">@tbd</span></div></li><li class="task "><div class="task-title">群兴 QX-17 采购订单退货流程接入与交互修复 effort:难 @tbd 2026-04-26</div><div class="task-meta"><span class="tag">qunxing</span> <span class="meta">@tbd</span></div></li><li class="task "><div class="task-title">群兴 QX-19 店铺批量上架优化（上架历史复用/快速上架，参考星链尚品） effort:难 @tbd 2026-04-26</div><div class="task-meta"><span class="tag">qunxing</span> <span class="meta">@tbd</span></div></li><li class="task "><div class="task-title">群兴 QX-21 店铺管理：分配运营与权限（执照关联、转让逻辑等业务规则落地） effort:难 @tbd 2026-04-26</div><div class="task-meta"><span class="tag">qunxing</span> <span class="meta">@tbd</span></div></li><li class="task "><div class="task-title">权限模型文档与接口契约 @tbd 2026-02-10</div><div class="task-meta"> <span class="meta">@tbd</span></div></li></ul></div><div class="column"><h3>✅ 已完成</h3><ul class="task-list"><li class="task task-done"><div class="task-title">星链尚品：首版需求与范围（1 页内）+ 里程碑初稿入 `docs/milestones.md` effort:好做 @CurLeaf 2026-04-27</div><div class="task-meta"><span class="tag">xlshangpin</span> <span class="meta">@CurLeaf</span></div></li><li class="task task-done"><div class="task-title">群兴 QX-01 店铺授权：保存平台过期时间入库并在列表展示 effort:好做 @俊波 2026-04-27</div><div class="task-meta"><span class="tag">qunxing</span> <span class="meta">@俊波</span></div></li><li class="task task-done"><div class="task-title">群兴 QX-20 平台仓库/店铺异常提示、引导去平台处理与上架阻拦 effort:一般 @俊波 2026-04-27</div><div class="task-meta"><span class="tag">qunxing</span> <span class="meta">@俊波</span></div></li><li class="task task-done"><div class="task-title">群兴 上架助手：商品批量选择 effort:好做 @俊波 2026-04-27</div><div class="task-meta"><span class="tag">qunxing</span> <span class="meta">@俊波</span></div></li><li class="task task-done"><div class="task-title">群兴 上架助手：修复异常报错「同一营业执照下已有店铺上架该档位，不可重复上架」 effort:好做 @CurLeaf 2026-04-27</div><div class="task-meta"><span class="tag">qunxing</span> <span class="meta">@CurLeaf</span></div></li><li class="task task-done"><div class="task-title">初始化 pm-hub 中枢仓与看板约定 @CurLeaf 2026-01-15</div><div class="task-meta"> <span class="meta">@CurLeaf</span></div></li></ul></div>
+      <div class="column"><h3>🟡 正在实现</h3><ul class="task-list"><li class="task "><div class="task-title">群兴 QX-07 异常商品表单编辑 effort:好做 @CurLeaf 2026-04-26</div><div class="task-meta"><span class="tag">qunxing</span> <span class="meta">@CurLeaf</span></div></li><li class="task "><div class="task-title">群兴 QX-22 分中心邀请普通合伙人流程 · 需求分析 effort:难 @CurLeaf 2026-04-26 (docs/qunxing-qx22-invite.md)</div><div class="task-meta"><span class="tag">qunxing</span> <span class="meta">@CurLeaf</span></div></li><li class="task "><div class="task-title">群兴 QX-03 已发货订单列表展示平台物流单号 effort:好做 @俊波 2026-04-28</div><div class="task-meta"><span class="tag">qunxing</span> <span class="meta">@俊波</span></div></li><li class="task "><div class="task-title">群兴 QX-02 商品刊登：图片顺序打乱 effort:好做 @书达 2026-04-28</div><div class="task-meta"><span class="tag">qunxing</span> <span class="meta">@书达</span></div></li><li class="task "><div class="task-title">群兴 QX-33 集成平台订单同步 effort:一般 @嘉松 2026-04-28</div><div class="task-meta"><span class="tag">qunxing</span> <span class="meta">@嘉松</span></div></li></ul></div><div class="column"><h3>🟢 待开始</h3><ul class="task-list"><li class="task "><div class="task-title">群兴 QX-10 平台商品卡编辑：热评网页截图 + AI 辅助输入 effort:好做 @tbd 2026-04-26</div><div class="task-meta"><span class="tag">qunxing</span> <span class="meta">@tbd</span></div></li><li class="task "><div class="task-title">群兴 QX-11 兴图：生成图片能力支持手机账号密码登录 effort:好做 @tbd 2026-04-26</div><div class="task-meta"><span class="tag">qunxing</span> <span class="meta">@tbd</span></div></li><li class="task "><div class="task-title">群兴 QX-12 分中心：邀请成员时审核员工档案，管理者通过后方可操作；所有者可改员工信息 effort:好做 @tbd 2026-04-26</div><div class="task-meta"><span class="tag">qunxing</span> <span class="meta">@tbd</span></div></li><li class="task "><div class="task-title">群兴 QX-13 商品刊登页：按用户关联规则筛选店铺（创建者/被分配者/分配与执照规则待与甲方确认）+ 长列表样式优化 effort:好做 @tbd 2026-04-26</div><div class="task-meta"><span class="tag">qunxing</span> <span class="meta">@tbd</span></div></li><li class="task "><div class="task-title">群兴 QX-15 全局 Input：移除垂直 padding（py） effort:好做 @tbd 2026-04-26</div><div class="task-meta"><span class="tag">qunxing</span> <span class="meta">@tbd</span></div></li><li class="task "><div class="task-title">群兴 QX-31 商品刊登：货号刊登加密与回写解密（低优先级） effort:一般 @tbd 2026-04-28</div><div class="task-meta"><span class="tag">qunxing</span> <span class="meta">@tbd</span></div></li><li class="task "><div class="task-title">群兴 QX-32 店铺列表搜索优化 effort:好做 @书达 2026-04-28</div><div class="task-meta"><span class="tag">qunxing</span> <span class="meta">@书达</span></div></li><li class="task "><div class="task-title">群兴 QX-05 定价策略生成图：删除/编辑/指定图重生成（低优先级） effort:一般 @tbd 2026-04-26</div><div class="task-meta"><span class="tag">qunxing</span> <span class="meta">@tbd</span></div></li><li class="task "><div class="task-title">群兴 QX-14 Ozon：非邮政物流信息与佣金计算更新（按新文档） effort:一般 @tbd 2026-04-26</div><div class="task-meta"><span class="tag">qunxing</span> <span class="meta">@tbd</span></div></li><li class="task "><div class="task-title">群兴 QX-23 分中心：额度设置（员工数量、店铺数量等） effort:一般 @tbd 2026-04-26</div><div class="task-meta"><span class="tag">qunxing</span> <span class="meta">@tbd</span></div></li><li class="task "><div class="task-title">群兴 QX-24 兴图：订单列表优化（参考兴链尚品） effort:一般 @CurLeaf 2026-04-27</div><div class="task-meta"><span class="tag">qunxing</span> <span class="meta">@CurLeaf</span></div></li><li class="task "><div class="task-title">群兴 QX-06 平台商品同步：编辑/归档/下架等与平台在售状态一致 effort:难 @tbd 2026-04-26</div><div class="task-meta"><span class="tag">qunxing</span> <span class="meta">@tbd</span></div></li><li class="task "><div class="task-title">群兴 QX-09 平台商品卡图合成视频 effort:难 @tbd 2026-04-26</div><div class="task-meta"><span class="tag">qunxing</span> <span class="meta">@tbd</span></div></li><li class="task "><div class="task-title">群兴 QX-16 平台订单退货流程接入 effort:难 @tbd 2026-04-26</div><div class="task-meta"><span class="tag">qunxing</span> <span class="meta">@tbd</span></div></li><li class="task "><div class="task-title">群兴 QX-17 采购订单退货流程接入与交互修复 effort:难 @tbd 2026-04-26</div><div class="task-meta"><span class="tag">qunxing</span> <span class="meta">@tbd</span></div></li><li class="task "><div class="task-title">群兴 QX-19 店铺批量上架优化（上架历史复用/快速上架，参考兴链尚品） effort:难 @tbd 2026-04-26</div><div class="task-meta"><span class="tag">qunxing</span> <span class="meta">@tbd</span></div></li><li class="task "><div class="task-title">群兴 QX-21 店铺管理：分配运营与权限（执照关联、转让逻辑等业务规则落地） effort:难 @tbd 2026-04-26</div><div class="task-meta"><span class="tag">qunxing</span> <span class="meta">@tbd</span></div></li><li class="task "><div class="task-title">群兴 QX-34 理解分支 feature/worker：`apps/*-worker` 拆分繁重任务；共享 packages 业务逻辑仍在业务层；docker-compose 扩容 worker 副本；观测/测试定时任务脚本，通过后合并主线并同步线上 effort:好做 @CurLeaf 2026-04-28</div><div class="task-meta"><span class="tag">qunxing</span> <span class="meta">@CurLeaf</span></div></li></ul></div><div class="column"><h3>✅ 已完成</h3><ul class="task-list"><li class="task task-done"><div class="task-title">群兴 QX-30 面单编辑器接入 effort:一般 @嘉松 2026-04-27</div><div class="task-meta"><span class="tag">qunxing</span> <span class="meta">@嘉松</span></div></li><li class="task task-done"><div class="task-title">群兴 QX-26 兴图：待处理订单页面样式调整 effort:一般 @CurLeaf 2026-04-27</div><div class="task-meta"><span class="tag">qunxing</span> <span class="meta">@CurLeaf</span></div></li><li class="task task-done"><div class="task-title">群兴 QX-27 兴图：待发货订单页面调整 effort:一般 @CurLeaf 2026-04-27</div><div class="task-meta"><span class="tag">qunxing</span> <span class="meta">@CurLeaf</span></div></li><li class="task task-done"><div class="task-title">群兴 QX-25 兴图：备货中订单页面调整 effort:一般 @CurLeaf 2026-04-27</div><div class="task-meta"><span class="tag">qunxing</span> <span class="meta">@CurLeaf</span></div></li><li class="task task-done"><div class="task-title">群兴 QX-28 兴图：已发货订单页面调整 effort:一般 @CurLeaf 2026-04-27</div><div class="task-meta"><span class="tag">qunxing</span> <span class="meta">@CurLeaf</span></div></li><li class="task task-done"><div class="task-title">群兴 QX-29 兴图：已取消订单页面调整 effort:一般 @CurLeaf 2026-04-27</div><div class="task-meta"><span class="tag">qunxing</span> <span class="meta">@CurLeaf</span></div></li><li class="task task-done"><div class="task-title">群兴 QX-18 Ozon 类目变更同步与系统侧适配 effort:难 @嘉松 2026-04-27</div><div class="task-meta"><span class="tag">qunxing</span> <span class="meta">@嘉松</span></div></li><li class="task task-done"><div class="task-title">群兴 QX-04 定价策略：审核时可修改 effort:好做 @嘉松 2026-04-27</div><div class="task-meta"><span class="tag">qunxing</span> <span class="meta">@嘉松</span></div></li><li class="task task-done"><div class="task-title">群兴 QX-08 快速发货流程上线 effort:好做 @书达 2026-04-27</div><div class="task-meta"><span class="tag">qunxing</span> <span class="meta">@书达</span></div></li><li class="task task-done"><div class="task-title">兴链尚品：dashboard 搭建 effort:好做 @凯杰 2026-04-27</div><div class="task-meta"><span class="tag">xlshangpin</span> <span class="meta">@凯杰</span></div></li><li class="task task-done"><div class="task-title">兴链尚品：首版需求与范围（1 页内）+ 里程碑初稿入 `docs/milestones.md` effort:好做 @CurLeaf 2026-04-27</div><div class="task-meta"><span class="tag">xlshangpin</span> <span class="meta">@CurLeaf</span></div></li><li class="task task-done"><div class="task-title">群兴 QX-01 店铺授权：保存平台过期时间入库并在列表展示 effort:好做 @俊波 2026-04-27</div><div class="task-meta"><span class="tag">qunxing</span> <span class="meta">@俊波</span></div></li><li class="task task-done"><div class="task-title">群兴 QX-20 平台仓库/店铺异常提示、引导去平台处理与上架阻拦 effort:一般 @俊波 2026-04-27</div><div class="task-meta"><span class="tag">qunxing</span> <span class="meta">@俊波</span></div></li><li class="task task-done"><div class="task-title">群兴 上架助手：商品批量选择 effort:好做 @俊波 2026-04-27</div><div class="task-meta"><span class="tag">qunxing</span> <span class="meta">@俊波</span></div></li><li class="task task-done"><div class="task-title">群兴 上架助手：修复异常报错「同一营业执照下已有店铺上架该档位，不可重复上架」 effort:好做 @CurLeaf 2026-04-27</div><div class="task-meta"><span class="tag">qunxing</span> <span class="meta">@CurLeaf</span></div></li><li class="task task-done"><div class="task-title">初始化 pm-hub 中枢仓与看板约定 @CurLeaf 2026-01-15</div><div class="task-meta"> <span class="meta">@CurLeaf</span></div></li></ul></div>
     </div>
-    <h2>里程碑</h2>
-    <div class="panel"><div class="milestone"><div class="mname">v0.1 MVP</div><div class="mbar-outer"><div class="mbar-inner" style="width:10%"></div></div><div class="mstat">10% <span class="mdate">2026-01-31</span></div></div><div class="milestone"><div class="mname">v0.2</div><div class="mbar-outer"><div class="mbar-inner" style="width:0%"></div></div><div class="mstat">0% <span class="mdate">2026-02-15</span></div></div></div>
-    <h2>仓库维度</h2>
-    <div class="panel"><div class="agg-line"><span class="rname">backend</span><span class="rnum">未完成 1 · 完成 1</span></div><div class="agg-line"><span class="rname">frontend</span><span class="rnum">未完成 0 · 完成 1</span></div><div class="agg-line"><span class="rname">qunxing</span><span class="rnum">未完成 23 · 完成 4</span></div><div class="agg-line"><span class="rname">xlshangpin</span><span class="rnum">未完成 1 · 完成 1</span></div></div>
-    <h2>成员负载</h2>
-    <div class="panel"><div class="agg-line"><span class="pname">@CurLeaf</span><span class="pnum">未完成 4 · 完成 3</span></div><div class="agg-line"><span class="pname">@tbd</span><span class="pnum">未完成 17 · 完成 0</span></div><div class="agg-line"><span class="pname">@书达</span><span class="pnum">未完成 1 · 完成 0</span></div><div class="agg-line"><span class="pname">@俊波</span><span class="pnum">未完成 0 · 完成 3</span></div><div class="agg-line"><span class="pname">@凯杰</span><span class="pnum">未完成 1 · 完成 0</span></div><div class="agg-line"><span class="pname">@嘉松</span><span class="pnum">未完成 2 · 完成 0</span></div></div>
-    <p class="footer">项目专页（按 effort 分组）：<a href="dashboard-qunxing.html"><code>qunxing</code> 群兴</a> · <a href="dashboard-xlshangpin.html"><code>xlshangpin</code> 星链尚品</a></p>
+    <div class="panel"><h2>燃尽图</h2>
+<p class="burndown-meta">已完成 <strong>16</strong> / <strong>39</strong> （<strong>41.0%</strong>）· 剩余 <strong>23</strong> · 日历日 <code>2026-04-28</code>（Asia/Shanghai）</p>
+<div class="burndown-legend" aria-hidden="true"><span class="lg"><i class="dot dot-rem"></i>剩余</span><span class="lg"><i class="dot dot-done"></i>已完成</span></div>
+<p class="heat-blurb">蓝线：剩余任务（向下为燃尽）；绿线：已完成（向上）。每日运行 <code>python scripts/gen_dashboard.py</code> 会写入当日快照。</p>
+<div class="burndown-chart-wrap"><svg class="burndown-svg" viewBox="0 0 720 268" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="看板燃尽与完成趋势">
+<line x1="50.0" y1="218.0" x2="702.0" y2="218.0" stroke="#e9ecef" stroke-width="1"/>
+<text x="42.0" y="222.0" text-anchor="end" font-size="11" fill="#868e96" font-family="system-ui,sans-serif">0</text>
+<line x1="50.0" y1="127.4" x2="702.0" y2="127.4" stroke="#e9ecef" stroke-width="1"/>
+<text x="42.0" y="131.4" text-anchor="end" font-size="11" fill="#868e96" font-family="system-ui,sans-serif">19</text>
+<line x1="50.0" y1="32.0" x2="702.0" y2="32.0" stroke="#e9ecef" stroke-width="1"/>
+<text x="42.0" y="36.0" text-anchor="end" font-size="11" fill="#868e96" font-family="system-ui,sans-serif">39</text>
+<polyline fill="none" stroke="#1971c2" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" points="50.0,127.4 702.0,108.3"/>
+<polyline fill="none" stroke="#2f9e44" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" opacity="0.92" points="50.0,141.7 702.0,141.7"/>
+<text x="50.0" y="250.0" text-anchor="middle" font-size="10" fill="#495057" font-family="system-ui,sans-serif">04-27</text>
+<text x="702.0" y="250.0" text-anchor="middle" font-size="10" fill="#495057" font-family="system-ui,sans-serif">04-28</text>
+<circle cx="50.0" cy="127.4" r="4.5" fill="#1971c2"><title>2026-04-27 剩余 19 · 完成 16 · 共 35</title></circle>
+<circle cx="702.0" cy="108.3" r="4.5" fill="#1971c2"><title>2026-04-28 剩余 23 · 完成 16 · 共 39</title></circle>
+</svg></div></div>
+    <p class="footer">项目专页（按 effort 分组）：<a href="dashboard-qunxing.html"><code>qunxing</code> 群兴</a> · <a href="dashboard-xlshangpin.html"><code>xlshangpin</code> 兴链尚品</a></p>
     <p class="footer">由 <code>python scripts/gen_dashboard.py</code> 从 Markdown 源生成，请勿手改本文件。</p>
   </div>
 </body>

@@ -4,7 +4,7 @@
 
 | 短名 | Git 地址 | 负责人 | 技术栈 | 状态 |
 |------|----------|--------|--------|------|
-| xlshangpin | <https://github.com/org/xlshangpin> | @CurLeaf | 星链尚品（新项） | 待启动 |
+| xlshangpin | <https://github.com/org/xlshangpin> | @CurLeaf | 兴链尚品（新项） | 待启动 |
 | qunxing | <https://github.com/org/qunxing> | @CurLeaf、俊波 | 群兴项目（跨端） | 活跃 |
 | frontend | <https://github.com/org/frontend> | @tbd | React + TypeScript | 活跃 |
 | backend | <https://github.com/org/backend> | @tbd | Go | 活跃 |

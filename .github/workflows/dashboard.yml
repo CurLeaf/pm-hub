@@ -6,14 +6,14 @@ on:
     paths:
       - "repos.md"
       - "docs/board.md"
-      - "docs/milestones.md"
+      - "docs/burndown-history.json"
       - "scripts/gen_dashboard.py"
       - "scripts/test_gen_dashboard.py"
   pull_request:
     paths:
       - "repos.md"
       - "docs/board.md"
-      - "docs/milestones.md"
+      - "docs/burndown-history.json"
       - "scripts/gen_dashboard.py"
       - "scripts/test_gen_dashboard.py"
   workflow_dispatch: {}
@@ -35,4 +35,4 @@ jobs:
         run: python scripts/gen_dashboard.py
 
       - name: Require committed HTML to match generated output
-        run: git diff --exit-code -- docs/dashboard.html docs/dashboard-qunxing.html docs/dashboard-xlshangpin.html
+        run: git diff --exit-code -- docs/dashboard.html docs/dashboard-qunxing.html docs/dashboard-xlshangpin.html docs/burndown-history.json

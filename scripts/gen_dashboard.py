@@ -1,10 +1,11 @@
 """
 Generate docs/dashboard.html, docs/dashboard-qunxing.html, docs/dashboard-xlshangpin.html
-from repos.md, docs/board.md, docs/milestones.md.
+from repos.md, docs/board.md, and docs/burndown-history.json (daily snapshot).
 Single-file, stdlib only. Do not hand-edit the HTML output; regenerate after SSOT changes.
 """
 from __future__ import annotations
 
+import json
 import re
 import sys
 from html import escape
@@ -13,6 +14,7 @@ from dataclasses import dataclass, field
 from collections import defaultdict
 from collections.abc import Callable
 from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
 
 HUB = Path(__file__).resolve().parent.parent
 OUT = HUB / "docs" / "dashboard.html"
@@ -21,6 +23,9 @@ OUT_XLSHANGPIN = HUB / "docs" / "dashboard-xlshangpin.html"
 REPO_PATH = HUB / "repos.md"
 BOARD_PATH = HUB / "docs" / "board.md"
 MILESTONES_PATH = HUB / "docs" / "milestones.md"
+BURNDOWN_PATH = HUB / "docs" / "burndown-history.json"
+BURNDOWN_MAX_POINTS = 180
+SNAPSHOT_TZ = ZoneInfo("Asia/Shanghai")
 
 RE_SECTION = re.compile(r"^##\s+(.+?)\s*$")
 RE_TASK = re.compile(r"^-\s+\[([xX ])\]\s+(.+)$")
@@ -154,9 +159,209 @@ def parse_milestones(md: str) -> list[Milestone]:
     return out
 
 
+@dataclass(frozen=True)
+class BurndownPoint:
+    """单日看板快照：总任务数与已完成数（剩余 = total - done）。"""
+
+    date: str  # YYYY-MM-DD，按 Asia/Shanghai 日历日
+    total: int
+    done: int
+
+    @property
+    def open(self) -> int:
+        return max(0, self.total - self.done)
+
+
+def snapshot_calendar_date_iso() -> str:
+    return datetime.now(SNAPSHOT_TZ).date().isoformat()
+
+
+def board_done_total(sections: dict[str, list[Task]]) -> tuple[int, int]:
+    """返回 (done_count, total_count)。"""
+    total = done = 0
+    for tasks in sections.values():
+        for t in tasks:
+            total += 1
+            if t.done:
+                done += 1
+    return done, total
+
+
+def load_burndown(path: Path) -> list[BurndownPoint]:
+    if not path.is_file():
+        return []
+    try:
+        raw = json.loads(path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        return []
+    pts: list[BurndownPoint] = []
+    for row in raw.get("points", []):
+        if not isinstance(row, dict) or "date" not in row:
+            continue
+        try:
+            pts.append(
+                BurndownPoint(
+                    date=str(row["date"]),
+                    total=max(0, int(row.get("total", 0))),
+                    done=max(0, int(row.get("done", 0))),
+                )
+            )
+        except (TypeError, ValueError):
+            continue
+    pts.sort(key=lambda p: p.date)
+    return pts
+
+
+def save_burndown(path: Path, points: list[BurndownPoint]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    data = {
+        "version": 1,
+        "points": [{"date": p.date, "total": p.total, "done": p.done} for p in points],
+    }
+    path.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+
+def upsert_today_burndown(
+    path: Path,
+    done: int,
+    total: int,
+    *,
+    today: str | None = None,
+) -> list[BurndownPoint]:
+    """写入或覆盖「当天」快照，裁剪过长历史，返回排序后的序列。"""
+    day = today if today else snapshot_calendar_date_iso()
+    points = load_burndown(path)
+    replaced = False
+    merged: list[BurndownPoint] = []
+    for p in points:
+        if p.date == day:
+            merged.append(BurndownPoint(date=day, total=max(0, total), done=max(0, min(done, total))))
+            replaced = True
+        else:
+            merged.append(p)
+    if not replaced:
+        merged.append(
+            BurndownPoint(date=day, total=max(0, total), done=max(0, min(done, total)))
+        )
+    merged.sort(key=lambda p: p.date)
+    if len(merged) > BURNDOWN_MAX_POINTS:
+        merged = merged[-BURNDOWN_MAX_POINTS:]
+    save_burndown(path, merged)
+    return merged
+
+
+def render_burndown_block(points: list[BurndownPoint], done: int, total: int) -> str:
+    """燃尽图区块：剩余任务曲线 + 已完成曲线，附完成度文案。"""
+    pct = round(100.0 * done / total, 1) if total else 0.0
+    open_n = max(0, total - done)
+    meta = (
+        f'<p class="burndown-meta">已完成 <strong>{done}</strong> / <strong>{total}</strong> '
+        f'（<strong>{pct}%</strong>）· 剩余 <strong>{open_n}</strong> · '
+        f'日历日 <code>{escape(snapshot_calendar_date_iso())}</code>（Asia/Shanghai）'
+        f'</p>'
+    )
+    if len(points) >= 2:
+        note = (
+            '<p class="heat-blurb">蓝线：剩余任务（向下为燃尽）；绿线：已完成（向上）。'
+            "每日运行 <code>python scripts/gen_dashboard.py</code> 会写入当日快照。</p>"
+        )
+    else:
+        note = ""
+    legend = (
+        '<div class="burndown-legend" aria-hidden="true">'
+        '<span class="lg"><i class="dot dot-rem"></i>剩余</span>'
+        '<span class="lg"><i class="dot dot-done"></i>已完成</span>'
+        "</div>"
+    )
+    svg = render_burndown_svg(points)
+    return f"""<h2>燃尽图</h2>
+{meta}
+{legend}
+{note}
+<div class="burndown-chart-wrap">{svg}</div>"""
+
+
+def render_burndown_svg(points: list[BurndownPoint]) -> str:
+    if not points:
+        return '<p class="heat-empty">（无快照数据）</p>'
+    n = len(points)
+    W, H = 720, 268
+    pl, pr, pt, pb = 50, 18, 32, 50
+    cw, ch = W - pl - pr, H - pt - pb
+    ymax = max(1, max(p.total for p in points))
+    opens = [p.open for p in points]
+    dones = [p.done for p in points]
+
+    def x_at(i: int) -> float:
+        if n <= 1:
+            return pl + cw / 2
+        return pl + (i / (n - 1)) * cw
+
+    def y_at(val: float) -> float:
+        v = max(0.0, min(float(val), float(ymax)))
+        return pt + ch - (v / ymax) * ch
+
+    parts: list[str] = [
+        f'<svg class="burndown-svg" viewBox="0 0 {W} {H}" xmlns="http://www.w3.org/2000/svg" '
+        f'role="img" aria-label="看板燃尽与完成趋势">'
+    ]
+    y_ticks = sorted({0, ymax, ymax // 2})
+    for gv in y_ticks:
+        gy = y_at(gv)
+        parts.append(
+            f'<line x1="{pl:.1f}" y1="{gy:.1f}" x2="{pl + cw:.1f}" y2="{gy:.1f}" '
+            f'stroke="#e9ecef" stroke-width="1"/>'
+        )
+        parts.append(
+            f'<text x="{pl - 8:.1f}" y="{gy + 4:.1f}" text-anchor="end" '
+            f'font-size="11" fill="#868e96" font-family="system-ui,sans-serif">{gv}</text>'
+        )
+
+    pts_rem = " ".join(f"{x_at(i):.1f},{y_at(opens[i]):.1f}" for i in range(n))
+    pts_done = " ".join(f"{x_at(i):.1f},{y_at(dones[i]):.1f}" for i in range(n))
+    parts.append(
+        f'<polyline fill="none" stroke="#1971c2" stroke-width="2.5" stroke-linejoin="round" '
+        f'stroke-linecap="round" points="{pts_rem}"/>'
+    )
+    parts.append(
+        f'<polyline fill="none" stroke="#2f9e44" stroke-width="2" stroke-linejoin="round" '
+        f'stroke-linecap="round" opacity="0.92" points="{pts_done}"/>'
+    )
+
+    label_step = max(1, (n - 1) // 7) if n > 8 else 1
+    idx_labels = sorted(set(range(0, n, label_step)) | ({n - 1} if n else set()))
+    for i in idx_labels:
+        p = points[i]
+        lab = p.date[5:] if len(p.date) >= 10 else p.date
+        lx = x_at(i)
+        parts.append(
+            f'<text x="{lx:.1f}" y="{H - 18:.1f}" text-anchor="middle" font-size="10" '
+            f'fill="#495057" font-family="system-ui,sans-serif">{escape(lab)}</text>'
+        )
+
+    for i in range(n):
+        tip = f"{points[i].date} 剩余 {opens[i]} · 完成 {dones[i]} · 共 {points[i].total}"
+        cx, cy = x_at(i), y_at(opens[i])
+        parts.append(
+            f'<circle cx="{cx:.1f}" cy="{cy:.1f}" r="4.5" fill="#1971c2">'
+            f"<title>{escape(tip)}</title></circle>"
+        )
+
+    parts.append("</svg>")
+    return "\n".join(parts)
+
+
 def task_effort_label(text: str) -> str:
     m = RE_EFFORT.search(text)
     return m.group(1) if m else "未标"
+
+
+EFFORT_WEIGHT = {"好做": 1, "一般": 2, "难": 3, "未标": 1}
+
+
+def task_effort_weight(text: str) -> int:
+    """热力图用难度加权：与看板 effort 一致。"""
+    return EFFORT_WEIGHT.get(task_effort_label(text), 1)
 
 
 def task_qx_order(text: str) -> int:
@@ -183,16 +388,16 @@ def collect_qunxing_tasks(sections: dict[str, list[Task]]) -> list[Task]:
     return collect_tasks_by_tag(sections, "qunxing")
 
 
-TEAM_HEATMAP_ROW_ORDER = ("群兴", "星链尚品", "其它", "(无标签)")
+TEAM_HEATMAP_ROW_ORDER = ("群兴", "兴链尚品", "其它", "(无标签)")
 
 
 def task_team_label(t: Task) -> str:
-    """产品线/团队行：群兴、星链尚品、其余带标签任务归为其它。"""
+    """产品线/团队行：群兴、兴链尚品、其余带标签任务归为其它。"""
     ts = set(t.tags or [])
     if "qunxing" in ts:
         return "群兴"
     if "xlshangpin" in ts:
-        return "星链尚品"
+        return "兴链尚品"
     if not ts:
         return "(无标签)"
     return "其它"
@@ -208,12 +413,16 @@ def section_sort_key(sec: str) -> int:
 
 def heatmap_team_matrix(
     sections: dict[str, list[Task]],
-) -> dict[str, dict[str, int]]:
-    m: dict[str, dict[str, int]] = defaultdict(lambda: defaultdict(int))
+) -> tuple[dict[str, dict[str, int]], dict[str, dict[str, int]]]:
+    """(各格任务条数, 各格 effort 加权和)。加权：好做1、一般2、难3、未标1。"""
+    cnt: dict[str, dict[str, int]] = defaultdict(lambda: defaultdict(int))
+    wgt: dict[str, dict[str, int]] = defaultdict(lambda: defaultdict(int))
     for sec_name, tasks in sections.items():
         for t in tasks:
-            m[task_team_label(t)][sec_name] += 1
-    return {k: dict(v) for k, v in m.items()}
+            row = task_team_label(t)
+            cnt[row][sec_name] += 1
+            wgt[row][sec_name] += task_effort_weight(t.text)
+    return {k: dict(v) for k, v in cnt.items()}, {k: dict(v) for k, v in wgt.items()}
 
 
 def _mention_is_unassigned(mention: str | None) -> bool:
@@ -224,52 +433,75 @@ def _mention_is_unassigned(mention: str | None) -> bool:
 
 def heatmap_people_matrix(
     sections: dict[str, list[Task]],
-) -> dict[str, dict[str, int]]:
-    m: dict[str, dict[str, int]] = defaultdict(lambda: defaultdict(int))
+) -> tuple[dict[str, dict[str, int]], dict[str, dict[str, int]]]:
+    """负责人热力图：不含 @tbd；返回 (条数, effort 加权和)。"""
+    cnt: dict[str, dict[str, int]] = defaultdict(lambda: defaultdict(int))
+    wgt: dict[str, dict[str, int]] = defaultdict(lambda: defaultdict(int))
     for sec_name, tasks in sections.items():
         for t in tasks:
             if t.mention and not _mention_is_unassigned(t.mention):
-                m[t.mention][sec_name] += 1
-    return {k: dict(v) for k, v in m.items()}
+                cnt[t.mention][sec_name] += 1
+                wgt[t.mention][sec_name] += task_effort_weight(t.text)
+    return {k: dict(v) for k, v in cnt.items()}, {k: dict(v) for k, v in wgt.items()}
 
 
-def _ordered_heatmap_rows_team(matrix: dict[str, dict[str, int]]) -> list[str]:
-    active = [r for r in matrix if sum(matrix[r].values()) > 0]
+def _ordered_heatmap_rows_team(
+    counts: dict[str, dict[str, int]],
+    weights: dict[str, dict[str, int]],
+) -> list[str]:
+    active = [r for r in counts if sum(counts[r].values()) > 0]
     out: list[str] = []
     for r in TEAM_HEATMAP_ROW_ORDER:
         if r in active:
             out.append(r)
-    rest = sorted([r for r in active if r not in out])
+    rest = sorted(
+        [r for r in active if r not in out],
+        key=lambda r: (-sum(weights.get(r, {}).values()), r),
+    )
     return out + rest
 
 
-def _ordered_heatmap_rows_people(matrix: dict[str, dict[str, int]]) -> list[str]:
-    active = [r for r in matrix if sum(matrix[r].values()) > 0]
-    return sorted(active, key=lambda r: (-sum(matrix[r].values()), r))
+def _ordered_heatmap_rows_people(
+    counts: dict[str, dict[str, int]],
+    weights: dict[str, dict[str, int]],
+) -> list[str]:
+    active = [r for r in counts if sum(counts[r].values()) > 0]
+    return sorted(
+        active,
+        key=lambda r: (
+            -sum(weights.get(r, {}).values()),
+            -sum(counts[r].values()),
+            r,
+        ),
+    )
 
 
 def render_heatmap_table(
-    matrix: dict[str, dict[str, int]],
+    counts: dict[str, dict[str, int]],
+    weights: dict[str, dict[str, int]],
     col_keys: list[str],
     row_labels: list[str],
     row_header: str,
 ) -> str:
+    """格内主显任务条数，括号内为 effort 加权和；颜色按加权和。"""
     if not row_labels:
         return '<p class="heat-empty">（无数据）</p>'
     max_v = 1
     for r in row_labels:
         for c in col_keys:
-            max_v = max(max_v, matrix[r].get(c, 0))
+            max_v = max(max_v, weights.get(r, {}).get(c, 0))
     th_cols = "".join(f"<th>{escape(c)}</th>" for c in col_keys)
     body_rows = []
     for r in row_labels:
         cells = []
         for c in col_keys:
-            v = matrix[r].get(c, 0)
-            intensity = (v / max_v) if max_v else 0.0
-            tip = f"{r} · {c}：{v} 条"
+            n = counts.get(r, {}).get(c, 0)
+            wv = weights.get(r, {}).get(c, 0)
+            intensity = (wv / max_v) if max_v else 0.0
+            tip = f"{r} · {c}：{n} 条，难度加权 {wv}（好做1·一般2·难3·未标1）"
+            inner = f'{n}<span class="heat-w"> ({wv})</span>'
             cells.append(
-                f'<td class="hcell" style="--heat:{intensity:.6f}" title="{escape(tip)}">{v}</td>'
+                f'<td class="hcell" style="--heat:{intensity:.6f}" title="{escape(tip)}">{inner}</td>'
             )
         body_rows.append(
             f'<tr><th scope="row" class="row-head">{escape(r)}</th>{"".join(cells)}</tr>'
@@ -492,7 +724,7 @@ def build_qunxing_html(tasks: list[Task], ts: str) -> str:
     nav = (
         '<a href="dashboard.html">← 总仪表盘</a>'
         '<span class="nav-sep">·</span>'
-        '<a href="dashboard-xlshangpin.html"><code>xlshangpin</code> 星链尚品</a>'
+        '<a href="dashboard-xlshangpin.html"><code>xlshangpin</code> 兴链尚品</a>'
     )
     blurb = (
         "来源：<code>docs/board.md</code> 中含 <code>[qunxing]</code> 的任务；"
@@ -522,8 +754,8 @@ def build_xlshangpin_html(tasks: list[Task], ts: str) -> str:
     return build_effort_hub_html(
         tasks,
         ts,
-        page_title="星链尚品任务 · pm-hub",
-        h1="星链尚品任务",
+        page_title="兴链尚品任务 · pm-hub",
+        h1="兴链尚品任务",
         blurb=blurb,
         nav_inner_html=nav,
         sort_within_effort=lambda t: (t.text.lower(),),
@@ -531,30 +763,17 @@ def build_xlshangpin_html(tasks: list[Task], ts: str) -> str:
 
 
 def build_html(
-    valid_repos: set[str],
     sections: dict[str, list[Task]],
     section_order: list[str],
-    milestones: list[Milestone],
+    burndown_points: list[BurndownPoint],
 ) -> str:
     now = datetime.now(timezone.utc)
     # Display in a neutral way (UTC). Local TZ: change if needed.
     ts = now.strftime("%Y-%m-%d %H:%M UTC")
-    by_repo: dict[str, dict[str, int]] = defaultdict(lambda: defaultdict(int))
-    by_mention: dict[str, dict[str, int]] = defaultdict(lambda: defaultdict(int))
     counts: dict[str, int] = defaultdict(int)
     for sec, tasks in sections.items():
         for t in tasks:
             counts[sec] += 1
-            st = "done" if t.done else "open"
-            if t.tags:
-                for tag in t.tags:
-                    by_repo[tag][st] += 1
-            else:
-                by_repo["(无标签)"][st] += 1
-            m = t.mention
-            if m:
-                st = "done" if t.done else "open"
-                by_mention[m][st] += 1
     kpi = list(section_order) if section_order else list(sections.keys())
     nav_cells = []
     for sec in kpi:
@@ -564,18 +783,20 @@ def build_html(
     nav = "".join(nav_cells)
     ordered_sections = sorted(sections.keys(), key=section_sort_key)
     heat_col_keys = list(ordered_sections)
-    team_m = heatmap_team_matrix(sections)
-    people_m = heatmap_people_matrix(sections)
+    team_cnt, team_wgt = heatmap_team_matrix(sections)
+    people_cnt, people_wgt = heatmap_people_matrix(sections)
     heat_team_html = render_heatmap_table(
-        team_m,
+        team_cnt,
+        team_wgt,
         heat_col_keys,
-        _ordered_heatmap_rows_team(team_m),
+        _ordered_heatmap_rows_team(team_cnt, team_wgt),
         "团队 ↓ ／ 分栏 →",
     )
     heat_people_html = render_heatmap_table(
-        people_m,
+        people_cnt,
+        people_wgt,
         heat_col_keys,
-        _ordered_heatmap_rows_people(people_m),
+        _ordered_heatmap_rows_people(people_cnt, people_wgt),
         "负责人 ↓ ／ 分栏 →",
     )
     col_html = []
@@ -597,30 +818,8 @@ def build_html(
             + ("".join(items) or "<li class=\"empty\">(无)</li>")
             + "</ul></div>"
         )
-    # Milestones bars
-    ms_rows = []
-    for m in milestones:
-        w = m.progress
-        ms_rows.append(
-            f'<div class="milestone"><div class="mname">{escape(m.name)}</div>'
-            f'<div class="mbar-outer"><div class="mbar-inner" style="width:{w}%"></div></div>'
-            f'<div class="mstat">{w}% <span class="mdate">{escape(m.target)}</span></div></div>'
-        )
-    # Repo aggregate
-    repo_rows = []
-    for r in sorted(by_repo.keys()):
-        o, d = by_repo[r].get("open", 0), by_repo[r].get("done", 0)
-        repo_rows.append(
-            f'<div class="agg-line"><span class="rname">{escape(r)}</span><span class="rnum">未完成 {o} · 完成 {d}</span></div>'
-        )
-    # People aggregate
-    people_rows = []
-    for p in sorted(by_mention.keys()):
-        o, d = by_mention[p].get("open", 0), by_mention[p].get("done", 0)
-        people_rows.append(
-            f'<div class="agg-line"><span class="pname">{escape(p)}</span><span class="pnum">未完成 {o} · 完成 {d}</span></div>'
-        )
-    repo_whitelist = " ".join(sorted(valid_repos)) if valid_repos else "—"
+    bd_done, bd_total = board_done_total(sections)
+    burndown_html = render_burndown_block(burndown_points, bd_done, bd_total)
     return f"""<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -630,7 +829,7 @@ def build_html(
   <style>
     * {{ box-sizing: border-box; }}
     body {{ font-family: system-ui, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; margin:0; color:#1a1a1a; background:#f6f7f9; }}
-    .wrap {{ max-width: 1100px; margin: 0 auto; padding: 1.5rem; }}
+    .wrap {{ max-width: 1280px; margin: 0 auto; padding: 1.5rem; }}
     header {{ display:flex; justify-content: space-between; align-items: baseline; margin-bottom: 1rem; flex-wrap:wrap; gap:.5rem; }}
     h1 {{ font-size:1.25rem; margin:0; }}
     .ts {{ color:#666; font-size:0.9rem; }}
@@ -639,10 +838,34 @@ def build_html(
     .kpi-label {{ font-size:0.8rem; color:#555; }}
     .kpi-value {{ font-size:1.5rem; font-weight:600; }}
     h2 {{ font-size:1rem; margin:1.5rem 0 0.5rem; color:#333; }}
-    .columns {{ display:grid; grid-template-columns: 1fr; gap:1rem; }}
-    @media (min-width: 800px) {{ .columns {{ grid-template-columns: 1fr 1fr; }} }}
-    .column {{ background:#fff; border:1px solid #e2e3e5; border-radius:8px; padding:1rem; }}
-    .column h3 {{ margin:0 0 0.5rem; font-size:0.95rem; }}
+    .columns {{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap:1rem;
+      align-items: stretch;
+    }}
+    @media screen and (min-width: 900px) {{ .columns {{ grid-template-columns: repeat(3, minmax(0, 1fr)); }} }}
+    .column {{
+      background:#fff;
+      border:1px solid #e2e3e5;
+      border-radius:8px;
+      padding:1rem;
+      display:flex;
+      flex-direction:column;
+      min-height:0;
+    }}
+    @media screen {{
+      .column {{
+        height: min(32rem, 58vh);
+      }}
+      .column .task-list {{
+        flex:1;
+        min-height:0;
+        overflow-y:auto;
+        -webkit-overflow-scrolling:touch;
+      }}
+    }}
+    .column h3 {{ margin:0 0 0.5rem; font-size:0.95rem; flex-shrink:0; }}
     .task-list {{ list-style:none; margin:0; padding:0; }}
     .task {{ border-bottom:1px solid #eee; padding:0.5rem 0; font-size:0.9rem; }}
     .task:last-child {{ border-bottom:none; }}
@@ -651,14 +874,14 @@ def build_html(
     .tag {{ display:inline-block; background:#eef2ff; color:#364fc7; padding:0.1em 0.4em; border-radius:4px; margin-right:0.3rem; font-size:0.75rem; }}
     .task-done .task-title {{ text-decoration: line-through; color:#888; }}
     .panel {{ background:#fff; border:1px solid #e2e3e5; border-radius:8px; padding:1rem; margin-top:0.5rem; }}
-    .milestone {{ display:grid; grid-template-columns: 1fr 3fr 120px; gap:0.5rem; align-items:center; margin:0.4rem 0; font-size:0.9rem; }}
-    @media (max-width: 700px) {{ .milestone {{ grid-template-columns: 1fr; }} }}
-    .mbar-outer {{ background:#e9ecef; height:8px; border-radius:4px; overflow:hidden; }}
-    .mbar-inner {{ background:#2f9e44; height:8px; border-radius:4px; }}
-    .mdate {{ color:#666; font-size:0.85em; margin-left:0.35em; }}
-    .mstat {{ text-align:right; color:#333; white-space:nowrap; }}
-    .agg-line {{ display:flex; justify-content: space-between; padding:0.35rem 0; border-bottom:1px solid #f0f0f0; font-size:0.9rem; }}
-    .rname, .pname {{ font-weight:500; }}
+    .burndown-meta {{ font-size:0.9rem; color:#333; margin:0 0 0.5rem; line-height:1.5; }}
+    .burndown-legend {{ display:flex; flex-wrap:wrap; gap:0.75rem 1rem; margin:0 0 0.35rem; font-size:0.82rem; color:#495057; }}
+    .burndown-legend .lg {{ display:inline-flex; align-items:center; gap:0.35rem; }}
+    .burndown-legend .dot {{ width:0.55rem; height:0.55rem; border-radius:50%; display:inline-block; }}
+    .burndown-legend .dot-rem {{ background:#1971c2; }}
+    .burndown-legend .dot-done {{ background:#2f9e44; }}
+    .burndown-chart-wrap {{ width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch; margin-top:0.25rem; }}
+    .burndown-svg {{ display:block; width:100%; max-width:720px; height:auto; margin:0 auto; }}
     .heat-blurb {{ font-size:0.88rem; color:#495057; margin:0 0 0.75rem; line-height:1.45; }}
     .heat-h3 {{ font-size:0.92rem; margin:1rem 0 0.35rem; color:#343a40; font-weight:600; }}
     .heat-scroll {{ overflow-x:auto; margin-bottom:0.25rem; -webkit-overflow-scrolling:touch; }}
@@ -672,9 +895,16 @@ def build_html(
       background-color: hsl(211, 72%, calc(96% - var(--heat) * 38%));
       color: #212529;
       font-variant-numeric: tabular-nums;
-      font-weight:600;
+      font-weight:700;
+      white-space: nowrap;
+    }}
+    table.heatmap td.hcell .heat-w {{
+      font-size: 0.88em;
+      font-weight: 600;
+      color: #495057;
     }}
     .heat-empty {{ font-size:0.88rem; color:#868e96; margin:0.25rem 0 0.75rem; }}
+    h2 .heat-scale {{ font-size:0.78em; font-weight:400; color:#6c757d; margin-left:0.35em; }}
     nav.project-hub {{
       display:flex; flex-wrap:wrap; align-items:center; gap:0.45rem;
       margin:0 0 1rem; padding:0.65rem 0.85rem;
@@ -692,6 +922,27 @@ def build_html(
     }}
     a.project-chip.project-qunxing {{ border-left:3px solid #e03131; }}
     a.project-chip.project-xl {{ border-left:3px solid #2f9e44; }}
+    @media print {{
+      body {{ background:#fff; -webkit-print-color-adjust: exact; print-color-adjust: exact; }}
+      .wrap {{ max-width:none; padding:0.75rem; }}
+      .heat-scroll,
+      .burndown-chart-wrap {{ overflow:visible !important; }}
+      table.heatmap {{ min-width:0; width:100%; page-break-inside:auto; }}
+      .columns {{ grid-template-columns:1fr !important; gap:0.75rem; }}
+      .column {{
+        height:auto !important;
+        max-height:none !important;
+        min-height:0;
+        break-inside:auto;
+        page-break-inside:auto;
+      }}
+      .column .task-list {{
+        flex:none !important;
+        overflow:visible !important;
+        max-height:none !important;
+      }}
+      a.project-chip {{ border:1px solid #ccc; }}
+    }}
     .footer {{ margin-top:2rem; font-size:0.8rem; color:#666; }}
     .footer code {{ background:#eee; padding:0.1em 0.3em; border-radius:3px; }}
   </style>
@@ -705,12 +956,10 @@ def build_html(
     <nav class="project-hub" aria-label="按项目进入专页">
       <span class="project-hub-label">项目</span>
       <a class="project-chip project-qunxing" href="dashboard-qunxing.html"><code>qunxing</code> 群兴</a>
-      <a class="project-chip project-xl" href="dashboard-xlshangpin.html"><code>xlshangpin</code> 星链尚品</a>
+      <a class="project-chip project-xl" href="dashboard-xlshangpin.html"><code>xlshangpin</code> 兴链尚品</a>
     </nav>
-    <p class="footer">已登记仓库短名（标签白名单来源）：<code>{escape(repo_whitelist)}</code></p>
     <div class="kpi-row">{nav}</div>
-    <h2>负载热力图</h2>
-    <p class="heat-blurb">按看板分栏统计任务条数（未完成与已完成均计入）。<strong>团队</strong>行按产品线归类（含 <code>qunxing</code> 为群兴、<code>xlshangpin</code> 为星链尚品，其余有标签为其它）；<strong>负责人</strong>按 <code>@</code> 提及汇总，<strong>不含</strong> <code>@tbd</code>（待分配仍体现在团队表与下方看板）。颜色在同一表内越深表示该格任务越多。任务列表中 <code>qunxing</code> / <code>xlshangpin</code> 以标签展示，与顶部「项目」入口一致。</p>
+    <h2>负载热力图<span class="heat-scale">（主数字为条数，括号内为难度加权；好做1 · 一般2 · 难3 · 未标1）</span></h2>
     <h3 class="heat-h3">团队（产品线）</h3>
     <div class="heat-scroll">{heat_team_html}</div>
     <h3 class="heat-h3">负责人</h3>
@@ -719,13 +968,8 @@ def build_html(
     <div class="columns">
       {''.join(col_html)}
     </div>
-    <h2>里程碑</h2>
-    <div class="panel">{''.join(ms_rows) or "<p>（无表格数据，参见 docs/milestones.md）</p>"}</div>
-    <h2>仓库维度</h2>
-    <div class="panel">{''.join(repo_rows) or "<p>（无带标签任务）</p>"}</div>
-    <h2>成员负载</h2>
-    <div class="panel">{''.join(people_rows) or "<p>（无 @ 提及）</p>"}</div>
-    <p class="footer">项目专页（按 effort 分组）：<a href="dashboard-qunxing.html"><code>qunxing</code> 群兴</a> · <a href="dashboard-xlshangpin.html"><code>xlshangpin</code> 星链尚品</a></p>
+    <div class="panel">{burndown_html}</div>
+    <p class="footer">项目专页（按 effort 分组）：<a href="dashboard-qunxing.html"><code>qunxing</code> 群兴</a> · <a href="dashboard-xlshangpin.html"><code>xlshangpin</code> 兴链尚品</a></p>
     <p class="footer">由 <code>python scripts/gen_dashboard.py</code> 从 Markdown 源生成，请勿手改本文件。</p>
   </div>
 </body>
@@ -738,17 +982,15 @@ def main() -> int:
         return 1
     rtext = read_text(REPO_PATH)
     btext = read_text(BOARD_PATH)
-    mtext = read_text(MILESTONES_PATH) if MILESTONES_PATH.is_file() else ""
     valid = parse_repos_index(rtext)
     sections, order = parse_board(btext, valid)
-    if not MILESTONES_PATH.is_file():
-        milestones: list[Milestone] = []
-    else:
-        milestones = parse_milestones(mtext)
-    html = build_html(valid, sections, order, milestones)
+    done, total = board_done_total(sections)
+    burndown_pts = upsert_today_burndown(BURNDOWN_PATH, done, total)
+    html = build_html(sections, order, burndown_pts)
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(html, encoding="utf-8")
     print(f"Wrote {OUT.relative_to(HUB)}")
+    print(f"Wrote {BURNDOWN_PATH.relative_to(HUB)}")
     qx_tasks = collect_qunxing_tasks(sections)
     ts = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
     qx_html = build_qunxing_html(qx_tasks, ts)

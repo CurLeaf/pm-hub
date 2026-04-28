@@ -113,26 +113,68 @@ class TestParsers(unittest.TestCase):
     def test_build_xlshangpin_html(self):
         valid = {"xlshangpin"}
         sec, _ = _gd.parse_board(
-            "## S\n- [ ] 星链 foo effort:好做 [xlshangpin] @a\n",
+            "## S\n- [ ] 兴链 foo effort:好做 [xlshangpin] @a\n",
             valid,
         )
         tasks = _gd.collect_tasks_by_tag(sec, "xlshangpin")
         html = _gd.build_xlshangpin_html(tasks, "2026-01-01 00:00 UTC")
-        self.assertIn("星链尚品任务", html)
-        self.assertIn("星链 foo", html)
+        self.assertIn("兴链尚品任务", html)
+        self.assertIn("兴链 foo", html)
         self.assertIn("dashboard-qunxing.html", html)
 
     def test_build_html(self):
-        valid = {"backend"}
+        valid = {"backend", "qunxing"}
         sections, order = _gd.parse_board(
-            "## S\n- [ ] T [backend]\n",
+            "## S\n- [ ] T [backend] [qunxing] @a\n",
             valid,
         )
-        ms = [ _gd.Milestone("m", "2026-01-01", 50) ]
-        html = _gd.build_html(valid, sections, order, ms)
+        bd = [
+            _gd.BurndownPoint("2026-04-01", 5, 1),
+            _gd.BurndownPoint("2026-04-02", 5, 2),
+        ]
+        html = _gd.build_html(sections, order, bd)
         self.assertIn("项目仪表盘", html)
-        self.assertIn("backend", html)
-        self.assertIn("m", html)
+        self.assertIn("qunxing", html)
+        self.assertIn("燃尽", html)
+        self.assertNotIn("里程碑", html)
+        self.assertNotIn("仓库维度", html)
+        self.assertNotIn("成员负载", html)
+
+    def test_board_done_total(self):
+        valid = {"qunxing"}
+        sec, _ = _gd.parse_board(
+            "## A\n- [ ] a [qunxing]\n- [x] b [qunxing]\n",
+            valid,
+        )
+        d, t = _gd.board_done_total(sec)
+        self.assertEqual((d, t), (1, 2))
+
+    def test_burndown_upsert(self):
+        import json
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmp:
+            p = Path(tmp) / "burndown-history.json"
+            r1 = _gd.upsert_today_burndown(p, 1, 4, today="2026-04-01")
+            self.assertEqual(len(r1), 1)
+            self.assertEqual(r1[0].done, 1)
+            r2 = _gd.upsert_today_burndown(p, 2, 4, today="2026-04-02")
+            self.assertEqual(len(r2), 2)
+            r3 = _gd.upsert_today_burndown(p, 3, 4, today="2026-04-02")
+            self.assertEqual(len(r3), 2)
+            self.assertEqual(r3[-1].done, 3)
+            raw = json.loads(p.read_text(encoding="utf-8"))
+            self.assertEqual(raw["version"], 1)
+            self.assertEqual(len(raw["points"]), 2)
+
+    def test_render_burndown_svg(self):
+        pts = [
+            _gd.BurndownPoint("2026-04-01", 10, 2),
+            _gd.BurndownPoint("2026-04-02", 10, 5),
+        ]
+        svg = _gd.render_burndown_svg(pts)
+        self.assertIn("polyline", svg)
+        self.assertIn("1971c2", svg)
 
     def test_task_team_label(self):
         T = _gd.Task
@@ -140,7 +182,7 @@ class TestParsers(unittest.TestCase):
             _gd.task_team_label(T("", False, "", "", ["qunxing"], None)), "群兴"
         )
         self.assertEqual(
-            _gd.task_team_label(T("", False, "", "", ["xlshangpin"], None)), "星链尚品"
+            _gd.task_team_label(T("", False, "", "", ["xlshangpin"], None)), "兴链尚品"
         )
         self.assertEqual(
             _gd.task_team_label(T("", False, "", "", ["backend"], None)), "其它"
@@ -156,7 +198,7 @@ class TestParsers(unittest.TestCase):
 - [ ] B effort:好做 [xlshangpin] @b 2026-01-02
 """
         sec, order = _gd.parse_board(md, valid)
-        html = _gd.build_html(valid, sec, order, [])
+        html = _gd.build_html(sec, order, [])
         self.assertIn("负载热力图", html)
         self.assertIn("团队（产品线）", html)
         self.assertIn("负责人", html)
@@ -169,11 +211,48 @@ class TestParsers(unittest.TestCase):
 - [ ] Y effort:好做 [qunxing] @me 2026-01-02
 """
         sec, _ = _gd.parse_board(md, valid)
-        m = _gd.heatmap_people_matrix(sec)
-        self.assertNotIn("@tbd", m)
-        self.assertIn("@me", m)
-        self.assertEqual(m["@me"].get("🟢 待开始"), 1)
+        cnt, wgt = _gd.heatmap_people_matrix(sec)
+        self.assertNotIn("@tbd", cnt)
+        self.assertIn("@me", cnt)
+        self.assertEqual(cnt["@me"].get("🟢 待开始"), 1)
+        self.assertEqual(wgt["@me"].get("🟢 待开始"), 1)
 
+    def test_heatmap_team_column_sums_match_section_counts(self):
+        """Each board column: sum over team rows == task count in that section."""
+        valid = {"qunxing", "xlshangpin", "frontend", "backend"}
+        md = """
+## 🟡 正在实现
+- [ ] A [qunxing] @a
+- [ ] B [frontend] [backend] @b
+## 🟢 待开始
+- [ ] C [xlshangpin] @c
+"""
+        sec, order = _gd.parse_board(md, valid)
+        counts: dict[str, int] = {}
+        for sn, tasks in sec.items():
+            counts[sn] = len(tasks)
+        team_cnt, _team_wgt = _gd.heatmap_team_matrix(sec)
+        for sn in sec:
+            s = sum(team_cnt.get(row, {}).get(sn, 0) for row in team_cnt)
+            self.assertEqual(s, counts[sn], msg=f"section {sn!r}")
+
+    def test_heatmap_team_weights_reflect_effort(self):
+        valid = {"qunxing"}
+        md = """
+## 🟡 正在实现
+- [ ] E effort:好做 [qunxing] @a
+- [ ] H effort:难 [qunxing] @b
+"""
+        sec, _ = _gd.parse_board(md, valid)
+        _cnt, wgt = _gd.heatmap_team_matrix(sec)
+        sec_name = "🟡 正在实现"
+        self.assertEqual(wgt["群兴"].get(sec_name), 4)
+
+    def test_task_effort_weight(self):
+        self.assertEqual(_gd.task_effort_weight("x effort:好做 [qunxing]"), 1)
+        self.assertEqual(_gd.task_effort_weight("x effort:一般 [qunxing]"), 2)
+        self.assertEqual(_gd.task_effort_weight("x effort:难 [qunxing]"), 3)
+        self.assertEqual(_gd.task_effort_weight("x [qunxing]"), 1)
 
 if __name__ == "__main__":
     unittest.main()

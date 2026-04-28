@@ -1,6 +1,6 @@
 # pm-hub
 
-多仓库产品/项目的中枢：任务看板、里程碑、仓库注册与决策记在以 Markdown 为唯一事实来源；`docs/dashboard.html` 为全量静态仪表盘（顶部可从 **项目** 入口进入各专页）；`docs/dashboard-qunxing.html`（`qunxing` 群兴）、`docs/dashboard-xlshangpin.html`（`xlshangpin` 星链尚品）为按 effort 分组的项目专页。
+多仓库产品/项目的中枢：任务看板、里程碑、仓库注册与决策记在以 Markdown 为唯一事实来源；`docs/dashboard.html` 为全量静态仪表盘（顶部可从 **项目** 入口进入各专页）；`docs/dashboard-qunxing.html`（`qunxing` 群兴）、`docs/dashboard-xlshangpin.html`（`xlshangpin` 兴链尚品）为按 effort 分组的项目专页。
 
 ## 快速开始
 
