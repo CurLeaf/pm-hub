@@ -1,6 +1,6 @@
 """
-Generate docs/dashboard.html, docs/dashboard-qunxing.html, docs/dashboard-xlshangpin.html
-from repos.md, docs/board.md, and docs/burndown-history.json (daily snapshot).
+Generate docs/dashboard.html, docs/dashboard-qunxing.html, docs/dashboard-xlshangpin.html,
+docs/dashboard-juminshang.html from repos.md, docs/board.md, and docs/burndown-history.json (daily snapshot).
 Single-file, stdlib only. Do not hand-edit the HTML output; regenerate after SSOT changes.
 """
 from __future__ import annotations
@@ -20,6 +20,7 @@ HUB = Path(__file__).resolve().parent.parent
 OUT = HUB / "docs" / "dashboard.html"
 OUT_QUNXING = HUB / "docs" / "dashboard-qunxing.html"
 OUT_XLSHANGPIN = HUB / "docs" / "dashboard-xlshangpin.html"
+OUT_JUMINSHANG = HUB / "docs" / "dashboard-juminshang.html"
 REPO_PATH = HUB / "repos.md"
 BOARD_PATH = HUB / "docs" / "board.md"
 MILESTONES_PATH = HUB / "docs" / "milestones.md"
@@ -33,6 +34,10 @@ RE_TAG = re.compile(r"\[([a-z0-9-]+)\]")
 RE_MENTION = re.compile(r"@\S+")
 RE_EFFORT = re.compile(r"effort:(好做|一般|难)")
 RE_QX = re.compile(r"QX-(\d+)", re.IGNORECASE)
+# Trailing ref in board line: `… (docs/foo.md)` or `… (https://…)` — shown as a compact link in HTML.
+RE_TASK_TRAIL_REF = re.compile(
+    r"^(?P<head>.+?)\s+\((?P<ref>docs/[^)]+\.md|https?://[^)]+)\)\s*$"
+)
 
 # Project short names shown as pills; stack tags still omitted from titles/pills (parsed for stats).
 TAGS_OMIT_FROM_MAIN_HTML = frozenset({"frontend", "backend"})
@@ -375,6 +380,26 @@ def strip_bracket_tags(text: str) -> str:
     return re.sub(r"  +", " ", s).strip()
 
 
+def task_title_html(text: str) -> str:
+    """Plain text task line → safe HTML: strip `[tags]`, turn trailing `(docs/*.md|url)` into a link."""
+    s = strip_bracket_tags(text)
+    m = RE_TASK_TRAIL_REF.match(s)
+    if not m:
+        return escape(s)
+    head = m.group("head").strip()
+    ref = m.group("ref")
+    if ref.startswith("docs/"):
+        href = ref[5:]
+        label = "说明"
+    else:
+        href = ref
+        label = "链接"
+    return (
+        f"{escape(head)} "
+        f'<a class="task-doc" href="{escape(href)}">{escape(label)}</a>'
+    )
+
+
 def collect_tasks_by_tag(sections: dict[str, list[Task]], tag: str) -> list[Task]:
     out: list[Task] = []
     for tasks in sections.values():
@@ -388,16 +413,18 @@ def collect_qunxing_tasks(sections: dict[str, list[Task]]) -> list[Task]:
     return collect_tasks_by_tag(sections, "qunxing")
 
 
-TEAM_HEATMAP_ROW_ORDER = ("群兴", "兴链尚品", "其它", "(无标签)")
+TEAM_HEATMAP_ROW_ORDER = ("群兴", "兴链尚品", "聚闽商", "其它", "(无标签)")
 
 
 def task_team_label(t: Task) -> str:
-    """产品线/团队行：群兴、兴链尚品、其余带标签任务归为其它。"""
+    """产品线/团队行：群兴、兴链尚品、聚闽商，其余带标签任务归为其它。"""
     ts = set(t.tags or [])
     if "qunxing" in ts:
         return "群兴"
     if "xlshangpin" in ts:
         return "兴链尚品"
+    if "juminshang" in ts:
+        return "聚闽商"
     if not ts:
         return "(无标签)"
     return "其它"
@@ -632,6 +659,8 @@ QUNXING_CSS = """
     .footer { margin-top: 1.25rem; font-size: 0.75rem; color: var(--muted); }
     .footer code { background: #f1f3f5; padding: 0.08em 0.35em; border-radius: 3px; font-size: 0.9em; }
     .sub code, .footer code { font-family: ui-monospace, "Cascadia Code", monospace; }
+    a.task-doc { color: var(--link); font-size: 0.8125rem; font-weight: 500; text-decoration: none; white-space: nowrap; }
+    a.task-doc:hover { text-decoration: underline; }
 """
 
 
@@ -673,7 +702,7 @@ def build_effort_hub_html(
         items = buckets[e]
         lis = []
         for t in items:
-            title_disp = escape(strip_bracket_tags(t.text))
+            title_disp = task_title_html(t.text)
             men = f'<span class="meta">{escape(t.mention)}</span>' if t.mention else ""
             meta_row = f'<div class="task-meta">{men}</div>' if men else ""
             done_cls = "task-done" if t.done else ""
@@ -725,6 +754,8 @@ def build_qunxing_html(tasks: list[Task], ts: str) -> str:
         '<a href="dashboard.html">← 总仪表盘</a>'
         '<span class="nav-sep">·</span>'
         '<a href="dashboard-xlshangpin.html"><code>xlshangpin</code> 兴链尚品</a>'
+        '<span class="nav-sep">·</span>'
+        '<a href="dashboard-juminshang.html"><code>juminshang</code> 聚闽商</a>'
     )
     blurb = (
         "来源：<code>docs/board.md</code> 中含 <code>[qunxing]</code> 的任务；"
@@ -746,6 +777,8 @@ def build_xlshangpin_html(tasks: list[Task], ts: str) -> str:
         '<a href="dashboard.html">← 总仪表盘</a>'
         '<span class="nav-sep">·</span>'
         '<a href="dashboard-qunxing.html"><code>qunxing</code> 群兴</a>'
+        '<span class="nav-sep">·</span>'
+        '<a href="dashboard-juminshang.html"><code>juminshang</code> 聚闽商</a>'
     )
     blurb = (
         "来源：<code>docs/board.md</code> 中含 <code>[xlshangpin]</code> 的任务；"
@@ -756,6 +789,29 @@ def build_xlshangpin_html(tasks: list[Task], ts: str) -> str:
         ts,
         page_title="兴链尚品任务 · pm-hub",
         h1="兴链尚品任务",
+        blurb=blurb,
+        nav_inner_html=nav,
+        sort_within_effort=lambda t: (t.text.lower(),),
+    )
+
+
+def build_juminshang_html(tasks: list[Task], ts: str) -> str:
+    nav = (
+        '<a href="dashboard.html">← 总仪表盘</a>'
+        '<span class="nav-sep">·</span>'
+        '<a href="dashboard-qunxing.html"><code>qunxing</code> 群兴</a>'
+        '<span class="nav-sep">·</span>'
+        '<a href="dashboard-xlshangpin.html"><code>xlshangpin</code> 兴链尚品</a>'
+    )
+    blurb = (
+        "来源：<code>docs/board.md</code> 中含 <code>[juminshang]</code> 的任务；"
+        "按 <code>effort:好做|一般|难</code> 分组，组内按标题排序。"
+    )
+    return build_effort_hub_html(
+        tasks,
+        ts,
+        page_title="聚闽商任务 · pm-hub",
+        h1="聚闽商任务",
         blurb=blurb,
         nav_inner_html=nav,
         sort_within_effort=lambda t: (t.text.lower(),),
@@ -804,7 +860,7 @@ def build_html(
         tasks = sections[sec]
         items = []
         for t in tasks:
-            title_disp = escape(strip_bracket_tags(t.text))
+            title_disp = task_title_html(t.text)
             vis = [x for x in (t.tags or []) if x not in TAGS_OMIT_FROM_MAIN_HTML]
             tag_str = " ".join(f'<span class="tag">{escape(x)}</span>' for x in vis)
             men = f'<span class="meta">{escape(t.mention)}</span>' if t.mention else ""
@@ -873,6 +929,8 @@ def build_html(
     .task-meta {{ margin-top:0.25rem; color:#666; font-size:0.8rem; }}
     .tag {{ display:inline-block; background:#eef2ff; color:#364fc7; padding:0.1em 0.4em; border-radius:4px; margin-right:0.3rem; font-size:0.75rem; }}
     .task-done .task-title {{ text-decoration: line-through; color:#888; }}
+    a.task-doc {{ color:#364fc7; font-size:0.82rem; font-weight:500; text-decoration:none; margin-left:0.15rem; white-space:nowrap; }}
+    a.task-doc:hover {{ text-decoration:underline; }}
     .panel {{ background:#fff; border:1px solid #e2e3e5; border-radius:8px; padding:1rem; margin-top:0.5rem; }}
     .burndown-meta {{ font-size:0.9rem; color:#333; margin:0 0 0.5rem; line-height:1.5; }}
     .burndown-legend {{ display:flex; flex-wrap:wrap; gap:0.75rem 1rem; margin:0 0 0.35rem; font-size:0.82rem; color:#495057; }}
@@ -922,6 +980,7 @@ def build_html(
     }}
     a.project-chip.project-qunxing {{ border-left:3px solid #e03131; }}
     a.project-chip.project-xl {{ border-left:3px solid #2f9e44; }}
+    a.project-chip.project-juminshang {{ border-left:3px solid #7950f2; }}
     @media print {{
       body {{ background:#fff; -webkit-print-color-adjust: exact; print-color-adjust: exact; }}
       .wrap {{ max-width:none; padding:0.75rem; }}
@@ -957,6 +1016,7 @@ def build_html(
       <span class="project-hub-label">项目</span>
       <a class="project-chip project-qunxing" href="dashboard-qunxing.html"><code>qunxing</code> 群兴</a>
       <a class="project-chip project-xl" href="dashboard-xlshangpin.html"><code>xlshangpin</code> 兴链尚品</a>
+      <a class="project-chip project-juminshang" href="dashboard-juminshang.html"><code>juminshang</code> 聚闽商</a>
     </nav>
     <div class="kpi-row">{nav}</div>
     <h2>负载热力图<span class="heat-scale">（主数字为条数，括号内为难度加权；好做1 · 一般2 · 难3 · 未标1）</span></h2>
@@ -969,7 +1029,7 @@ def build_html(
       {''.join(col_html)}
     </div>
     <div class="panel">{burndown_html}</div>
-    <p class="footer">项目专页（按 effort 分组）：<a href="dashboard-qunxing.html"><code>qunxing</code> 群兴</a> · <a href="dashboard-xlshangpin.html"><code>xlshangpin</code> 兴链尚品</a></p>
+    <p class="footer">项目专页（按 effort 分组）：<a href="dashboard-qunxing.html"><code>qunxing</code> 群兴</a> · <a href="dashboard-xlshangpin.html"><code>xlshangpin</code> 兴链尚品</a> · <a href="dashboard-juminshang.html"><code>juminshang</code> 聚闽商</a></p>
     <p class="footer">由 <code>python scripts/gen_dashboard.py</code> 从 Markdown 源生成，请勿手改本文件。</p>
   </div>
 </body>
@@ -1000,6 +1060,10 @@ def main() -> int:
     xls_html = build_xlshangpin_html(xls_tasks, ts)
     OUT_XLSHANGPIN.write_text(xls_html, encoding="utf-8")
     print(f"Wrote {OUT_XLSHANGPIN.relative_to(HUB)}")
+    jms_tasks = collect_tasks_by_tag(sections, "juminshang")
+    jms_html = build_juminshang_html(jms_tasks, ts)
+    OUT_JUMINSHANG.write_text(jms_html, encoding="utf-8")
+    print(f"Wrote {OUT_JUMINSHANG.relative_to(HUB)}")
     return 0
 
 

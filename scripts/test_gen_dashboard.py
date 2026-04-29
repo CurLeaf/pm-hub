@@ -59,7 +59,7 @@ class TestParsers(unittest.TestCase):
         if not p.is_file():
             self.skipTest("repos.md not present")
         s = _gd.parse_repos_index(p.read_text(encoding="utf-8"))
-        for name in ("xlshangpin", "qunxing", "frontend", "backend", "mobile", "infra"):
+        for name in ("xlshangpin", "juminshang", "qunxing", "frontend", "backend", "mobile", "infra"):
             self.assertIn(name, s)
 
     def test_collect_qunxing_tasks(self):
@@ -82,6 +82,20 @@ class TestParsers(unittest.TestCase):
             "群兴 QX-01 x effort:好做 @tbd 2026-04-26",
         )
 
+    def test_task_title_html_trailing_doc_link(self):
+        raw = "群兴 QX-30 x effort:一般 [qunxing] @嘉松 2026-04-28 (docs/qunxing-qx30-waybill-editor.md)"
+        html = _gd.task_title_html(raw)
+        self.assertIn("群兴 QX-30", html)
+        self.assertIn('href="qunxing-qx30-waybill-editor.md"', html)
+        self.assertIn(">说明</a>", html)
+        self.assertNotIn("docs/", html)
+        self.assertNotIn("[qunxing]", html)
+
+    def test_task_title_html_no_trailing_ref(self):
+        raw = "群兴 QX-01 x effort:好做 [qunxing] @tbd 2026-04-26"
+        html = _gd.task_title_html(raw)
+        self.assertEqual(html, _gd.escape(_gd.strip_bracket_tags(raw)))
+
     def test_build_qunxing_html(self):
         valid = {"qunxing", "backend"}
         sec, _ = _gd.parse_board(
@@ -98,6 +112,7 @@ class TestParsers(unittest.TestCase):
         self.assertNotIn("effort:好做 [qunxing]", html)
         self.assertNotIn('class="tag"', html)
         self.assertIn("dashboard-xlshangpin.html", html)
+        self.assertIn("dashboard-juminshang.html", html)
 
     def test_collect_tasks_by_tag(self):
         valid = {"qunxing", "xlshangpin"}
@@ -121,6 +136,20 @@ class TestParsers(unittest.TestCase):
         self.assertIn("兴链尚品任务", html)
         self.assertIn("兴链 foo", html)
         self.assertIn("dashboard-qunxing.html", html)
+        self.assertIn("dashboard-juminshang.html", html)
+
+    def test_build_juminshang_html(self):
+        valid = {"juminshang"}
+        sec, _ = _gd.parse_board(
+            "## S\n- [ ] 闽商 foo effort:一般 [juminshang] @a\n",
+            valid,
+        )
+        tasks = _gd.collect_tasks_by_tag(sec, "juminshang")
+        html = _gd.build_juminshang_html(tasks, "2026-01-01 00:00 UTC")
+        self.assertIn("聚闽商任务", html)
+        self.assertIn("闽商 foo", html)
+        self.assertIn("dashboard-qunxing.html", html)
+        self.assertIn("dashboard-xlshangpin.html", html)
 
     def test_build_html(self):
         valid = {"backend", "qunxing"}
@@ -183,6 +212,9 @@ class TestParsers(unittest.TestCase):
         )
         self.assertEqual(
             _gd.task_team_label(T("", False, "", "", ["xlshangpin"], None)), "兴链尚品"
+        )
+        self.assertEqual(
+            _gd.task_team_label(T("", False, "", "", ["juminshang"], None)), "聚闽商"
         )
         self.assertEqual(
             _gd.task_team_label(T("", False, "", "", ["backend"], None)), "其它"

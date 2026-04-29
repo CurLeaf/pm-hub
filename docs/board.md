@@ -4,11 +4,8 @@
 
 ## 🟡 正在实现
 
-- [ ] 群兴 QX-07 异常商品表单编辑 effort:好做 [qunxing] @CurLeaf 2026-04-26
 - [ ] 群兴 QX-22 分中心邀请普通合伙人流程 · 需求分析 effort:难 [qunxing] @CurLeaf 2026-04-26 (docs/qunxing-qx22-invite.md)
-- [ ] 群兴 QX-03 已发货订单列表展示平台物流单号 effort:好做 [qunxing] @俊波 2026-04-28
-- [ ] 群兴 QX-02 商品刊登：图片顺序打乱 effort:好做 [qunxing] @书达 2026-04-28
-- [ ] 群兴 QX-33 集成平台订单同步 effort:一般 [qunxing] @嘉松 2026-04-28
+- [ ] 群兴 QX-35 已发货订单：批量打印修复 effort:一般 [qunxing] @CurLeaf 2026-04-28
 
 ## 🟢 待开始
 
@@ -29,11 +26,18 @@
 - [ ] 群兴 QX-17 采购订单退货流程接入与交互修复 effort:难 [qunxing] @tbd 2026-04-26
 - [ ] 群兴 QX-19 店铺批量上架优化（上架历史复用/快速上架，参考兴链尚品） effort:难 [qunxing] @tbd 2026-04-26
 - [ ] 群兴 QX-21 店铺管理：分配运营与权限（执照关联、转让逻辑等业务规则落地） effort:难 [qunxing] @tbd 2026-04-26
-- [ ] 群兴 QX-34 理解分支 feature/worker：`apps/*-worker` 拆分繁重任务；共享 packages 业务逻辑仍在业务层；docker-compose 扩容 worker 副本；观测/测试定时任务脚本，通过后合并主线并同步线上 effort:好做 [qunxing] @CurLeaf 2026-04-28
 
 ## ✅ 已完成
 
-- [x] 群兴 QX-30 面单编辑器接入 effort:一般 [qunxing] @嘉松 2026-04-27
+- [x] 群兴 QX-03 已发货订单列表展示平台物流单号 effort:好做 [qunxing] @俊波 2026-04-28
+- [x] 群兴 QX-02 商品刊登：图片顺序打乱 effort:好做 [qunxing] @书达 2026-04-28
+- [x] 群兴 QX-34 理解分支 feature/worker：`apps/*-worker` 拆分繁重任务；共享 packages 业务逻辑仍在业务层；docker-compose 扩容 worker 副本；观测/测试定时任务脚本，通过后合并主线并同步线上；注意数据同步 effort:一般 [qunxing] @嘉松 2026-04-28
+- [x] 兴链尚品：图片整合成 PPT effort:好做 [xlshangpin] @伟鹏 2026-04-28
+- [x] 聚闽商：H5 部署 effort:一般 [juminshang] @嘉松 2026-04-28
+- [x] 聚闽商：部署文档编写 effort:好做 [juminshang] @嘉松 2026-04-28
+- [x] 群兴 QX-36 系统商品：SKU 搜索 effort:好做 [qunxing] @凯杰 2026-04-28
+- [x] 群兴 QX-07 异常商品列表样式调整 effort:好做 [qunxing] @CurLeaf 2026-04-28
+- [x] 群兴 QX-30 面单编辑器接入（模板配置与打印联动） effort:一般 [qunxing] @嘉松 2026-04-28 (docs/qunxing-qx30-waybill-editor.md)
 - [x] 群兴 QX-26 兴图：待处理订单页面样式调整 effort:一般 [qunxing] @CurLeaf 2026-04-27
 - [x] 群兴 QX-27 兴图：待发货订单页面调整 effort:一般 [qunxing] @CurLeaf 2026-04-27
 - [x] 群兴 QX-25 兴图：备货中订单页面调整 effort:一般 [qunxing] @CurLeaf 2026-04-27
