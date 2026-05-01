@@ -708,6 +708,7 @@ def build_effort_hub_html(
     nav_inner_html: str,
     sort_within_effort: Callable[[Task], object],
     task_meta_inner_html: Callable[[Task], str] | None = None,
+    hide_done_toggle: bool = False,
 ) -> str:
     """Tasks grouped by effort: 好做 → 一般 → 难 → 未标; sort_within_effort per bucket."""
     meta_fn = task_meta_inner_html or default_effort_hub_task_meta_html
@@ -759,13 +760,59 @@ def build_effort_hub_html(
         )
     total = len(tasks)
     open_n = sum(1 for t in tasks if not t.done)
+    hide_done_style = ""
+    hide_done_block = ""
+    hide_done_script = ""
+    if hide_done_toggle:
+        hide_done_style = """
+    .toolbar-done-toggle { margin: 0 0 0.75rem 0; }
+    .btn-toggle-done {
+      font: inherit;
+      font-size: 0.8125rem;
+      padding: 0.35rem 0.65rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      color: var(--text);
+      cursor: pointer;
+    }
+    .btn-toggle-done:hover { border-color: var(--link); color: var(--link); }
+    .btn-toggle-done[aria-pressed="true"] { background: #e7f5ff; border-color: #4dabf7; color: #1864ab; }
+    .wrap.hide-done-tasks li.task.task-done { display: none !important; }
+"""
+        hide_done_block = (
+            '<div class="toolbar-done-toggle"><button type="button" class="btn-toggle-done" '
+            'id="btn-toggle-hide-done" aria-pressed="false">隐藏已完成</button></div>'
+        )
+        hide_done_script = """<script>
+(function(){
+  var btn = document.getElementById('btn-toggle-hide-done');
+  var root = document.querySelector('.wrap');
+  if (!btn || !root) return;
+  var KEY = 'pm-hub-hide-done-personal';
+  function apply(on) {
+    root.classList.toggle('hide-done-tasks', on);
+    btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+    btn.textContent = on ? '显示已完成' : '隐藏已完成';
+  }
+  function stored() {
+    try { return localStorage.getItem(KEY) === '1'; } catch (e) { return false; }
+  }
+  apply(stored());
+  btn.addEventListener('click', function() {
+    var on = !root.classList.contains('hide-done-tasks');
+    apply(on);
+    try { localStorage.setItem(KEY, on ? '1' : '0'); } catch (e) {}
+  });
+})();
+</script>"""
     return f"""<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>{escape(page_title)}</title>
-  <style>{QUNXING_CSS}
+  <style>{QUNXING_CSS}{hide_done_style}
   </style>
 </head>
 <body>
@@ -777,10 +824,12 @@ def build_effort_hub_html(
     </header>
     <p class="sub">{blurb}</p>
     <p class="sub">合计 <strong>{total}</strong> 条（未完成 <strong>{open_n}</strong>）。</p>
+    {hide_done_block}
     <div class="kpi-row">{"".join(kpi_cells)}</div>
     {"".join(blocks)}
     <p class="footer">由 <code>python scripts/gen_dashboard.py</code> 生成，请勿手改。</p>
   </div>
+{hide_done_script}
 </body>
 </html>"""
 
@@ -892,6 +941,7 @@ def build_personal_dashboard_html(tasks: list[Task], ts: str, mention: str) -> s
             else (1, 0, t.text.lower())
         ),
         task_meta_inner_html=visible_repo_tags_html,
+        hide_done_toggle=True,
     )
 
 

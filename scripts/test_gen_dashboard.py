@@ -116,6 +116,7 @@ class TestParsers(unittest.TestCase):
         if _gd.PERSON_DASHBOARD_MENTION.strip():
             self.assertIn("dashboard-personal.html", html)
             self.assertIn("我的工作", html)
+        self.assertNotIn("btn-toggle-hide-done", html)
 
     def test_collect_tasks_by_mention(self):
         valid = {"qunxing"}
@@ -145,6 +146,8 @@ class TestParsers(unittest.TestCase):
         self.assertIn("QX-03", html)
         self.assertIn('class="tag"', html)
         self.assertIn("qunxing", html)
+        self.assertIn("btn-toggle-hide-done", html)
+        self.assertIn("hide-done-tasks", html)
 
     def test_collect_tasks_by_tag(self):
         valid = {"qunxing", "xlshangpin"}

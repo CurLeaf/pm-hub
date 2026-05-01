@@ -22,7 +22,7 @@
 - [ ] 群兴 QX-32 店铺列表搜索优化 effort:好做 [qunxing] @书达 2026-04-28
 - [ ] 群兴 QX-05 定价策略生成图：删除/编辑/指定图重生成（低优先级） effort:一般 [qunxing] @tbd 2026-04-26
 - [ ] 群兴 QX-23 分中心：额度设置（员工数量、店铺数量等） effort:一般 [qunxing] @tbd 2026-04-26
-- [ ] 群兴 QX-24 兴图：订单列表优化（参考兴链尚品） effort:一般 [qunxing] @CurLeaf 2026-04-27
+- [ ] 群兴 QX-24 兴图：订单列表优化（参考兴链尚品） effort:难 [qunxing] @CurLeaf 2026-04-27
 - [ ] 群兴 QX-06 平台商品同步：编辑/归档/下架等与平台在售状态一致 effort:难 [qunxing] @tbd 2026-04-26
 - [ ] 群兴 QX-09 平台商品卡图合成视频 effort:难 [qunxing] @tbd 2026-04-26
 - [ ] 群兴 QX-16 平台订单退货流程接入 effort:难 [qunxing] @tbd 2026-04-26
