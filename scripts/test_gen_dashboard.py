@@ -113,6 +113,38 @@ class TestParsers(unittest.TestCase):
         self.assertNotIn('class="tag"', html)
         self.assertIn("dashboard-xlshangpin.html", html)
         self.assertIn("dashboard-juminshang.html", html)
+        if _gd.PERSON_DASHBOARD_MENTION.strip():
+            self.assertIn("dashboard-personal.html", html)
+            self.assertIn("我的工作", html)
+
+    def test_collect_tasks_by_mention(self):
+        valid = {"qunxing"}
+        md = """
+## 🟡 正在实现
+- [ ] Mine effort:好做 [qunxing] @CurLeaf 2026-01-01
+- [ ] Other effort:一般 [qunxing] @凯杰 2026-01-01
+"""
+        sec, _ = _gd.parse_board(md, valid)
+        mine = _gd.collect_tasks_by_mention(sec, "@CurLeaf")
+        self.assertEqual(len(mine), 1)
+        self.assertIn("Mine", mine[0].text)
+
+    def test_build_personal_dashboard_html(self):
+        valid = {"qunxing"}
+        sec, _ = _gd.parse_board(
+            "## 🟡 正在实现\n"
+            "- [ ] 群兴 QX-03 z effort:一般 [qunxing] @CurLeaf\n"
+            "- [ ] 群兴 QX-01 a effort:好做 [qunxing] @CurLeaf\n",
+            valid,
+        )
+        tasks = _gd.collect_tasks_by_mention(sec, "@CurLeaf")
+        html = _gd.build_personal_dashboard_html(tasks, "2026-01-01 00:00 UTC", "@CurLeaf")
+        self.assertIn("我的工作看板", html)
+        self.assertIn("@CurLeaf", html)
+        self.assertIn("QX-01", html)
+        self.assertIn("QX-03", html)
+        self.assertIn('class="tag"', html)
+        self.assertIn("qunxing", html)
 
     def test_collect_tasks_by_tag(self):
         valid = {"qunxing", "xlshangpin"}
@@ -168,6 +200,8 @@ class TestParsers(unittest.TestCase):
         self.assertNotIn("里程碑", html)
         self.assertNotIn("仓库维度", html)
         self.assertNotIn("成员负载", html)
+        if _gd.PERSON_DASHBOARD_MENTION.strip():
+            self.assertIn("dashboard-personal.html", html)
 
     def test_board_done_total(self):
         valid = {"qunxing"}

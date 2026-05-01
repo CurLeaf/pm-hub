@@ -51,7 +51,9 @@
 
 ## 自动产物（HTML）
 
-- **`docs/dashboard.html`**：全量看板、顶部 **项目** 入口（`qunxing` / `xlshangpin` 专页）、里程碑、**负载热力图**（团队产品线 × 看板分栏、负责人 × 看板分栏，颜色表示相对任务量）等；**只读**来源：`repos.md`、`docs/board.md`、`docs/milestones.md`。
+- **`docs/dashboard.html`**：全量看板、顶部 **项目 / 个人** 入口（各专页）、里程碑、**负载热力图**（团队产品线 × 看板分栏、负责人 × 看板分栏，颜色表示相对任务量）等；**只读**来源：`repos.md`、`docs/board.md`、`docs/milestones.md`。
 - **`docs/dashboard-qunxing.html`**：仅含看板中标注 `[qunxing]` 的群兴 QX 任务，按 `effort:好做|一般|难` 分组展示。
 - **`docs/dashboard-xlshangpin.html`**：仅含看板中标注 `[xlshangpin]` 的任务，按 `effort:好做|一般|难` 分组展示。
+- **`docs/dashboard-juminshang.html`**：仅含看板中标注 `[juminshang]` 的任务，按 `effort:好做|一般|难` 分组展示。
+- **`docs/dashboard-personal.html`**（可选）：脚本中 `PERSON_DASHBOARD_MENTION`（须与任务行 `@负责人` 完全一致）非空时生成；汇总该负责人的任务，按 effort 分组；总览与各项目专页可链入。
 - **不要**手改上述 HTML；均由 `python scripts/gen_dashboard.py` 生成后一并提交。
