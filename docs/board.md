@@ -6,6 +6,8 @@
 
 - [ ] 群兴 QX-35 已发货订单：批量打印修复 effort:一般 [qunxing] @凯杰 2026-04-29
 - [ ] 群兴 QX-53 同步店铺封禁状态，发请求时自动过滤异常店铺与订单（阻塞 QX-35） effort:一般 [qunxing] @嘉松 2026-04-30
+- [ ] 群兴 QX-54 异常商品面板：优化展示并包含对应档位商品信息 effort:一般 [qunxing] @CurLeaf 2026-05-01
+- [ ] 群兴 QX-55 选品中心：展示对应商品的销售信息 effort:一般 [qunxing] @CurLeaf 2026-05-01
 - [ ] 群兴 QX-38 5.1 期间针对需求的整理 effort:难 [qunxing] @CurLeaf 2026-04-29
 - [ ] 群兴 QX-40 优化创建库位表单：样式优化 effort:一般 [qunxing] @CurLeaf 2026-04-29
 - [ ] 群兴 QX-43 员工审核前后端页面 effort:一般 [qunxing] @伟鹏 2026-04-29
