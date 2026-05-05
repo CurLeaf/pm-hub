@@ -136,6 +136,35 @@
       font-size: 0.72rem;
     }
 
+    .dev-time-toolbar {
+      margin: 0 0 0.85rem 0; padding: 0.65rem 0.75rem; background: var(--surface, #fff);
+      border: 1px solid var(--border, #e9ecef); border-radius: var(--radius, 6px); font-size: 0.8125rem;
+    }
+    .dev-time-toolbar-label { font-weight: 600; margin-right: 0.35rem; color: var(--text, #212529); }
+    .tt-toolbar-btn {
+      font: inherit; font-size: 0.8125rem; padding: 0.3rem 0.55rem; margin-right: 0.35rem;
+      border: 1px solid var(--border, #dee2e6); border-radius: 4px; background: var(--surface, #fff);
+      cursor: pointer; color: var(--text, #212529);
+    }
+    .tt-toolbar-btn:hover { border-color: var(--link, #1c7ed6); color: var(--link, #1c7ed6); }
+    .tt-toolbar-msg { color: var(--muted, #6c757d); margin-left: 0.35rem; }
+    .dev-time-toolbar-note { margin: 0.5rem 0 0; font-size: 0.76rem; color: var(--muted, #868e96); line-height: 1.45; }
+    .task-timer {
+      margin-top: 0.4rem; padding: 0.35rem 0; display: flex; flex-wrap: wrap; align-items: center;
+      gap: 0.35rem 0.65rem; font-size: 0.78rem; border-top: 1px dashed var(--border, #e9ecef);
+    }
+    .tt-line { display: inline-flex; flex-wrap: wrap; gap: 0.65rem; align-items: baseline; }
+    .tt-total-wrap, .tt-run-wrap { color: var(--muted, #6c757d); }
+    .tt-total, .tt-run { color: var(--text, #212529); font-variant-numeric: tabular-nums; }
+    .tt-btns { display: inline-flex; gap: 0.25rem; flex-wrap: wrap; }
+    .tt-btn {
+      font: inherit; font-size: 0.72rem; padding: 0.15rem 0.45rem; border-radius: 4px;
+      border: 1px solid var(--border, #dee2e6); background: #f8f9fa; cursor: pointer; color: #212529;
+    }
+    .tt-btn:hover { border-color: var(--link, #1c7ed6); color: var(--link, #1c7ed6); background: #fff; }
+    .tt-hint { font-size: 0.7rem; color: #868e96; flex-basis: 100%; }
+    .columns .task-timer { border-top: none; margin-top: 0.25rem; padding-top: 0.25rem; }
+
     .toolbar-done-toggle { margin: 0 0 0.75rem 0; }
     .btn-toggle-done {
       font: inherit;
@@ -158,13 +187,14 @@
     <header>
       <h1>我的工作看板（@CurLeaf）</h1>
       <div class="nav-top"><a href="dashboard.html">← 总仪表盘</a><span class="nav-sep">·</span><a href="dashboard-qunxing.html"><code>qunxing</code> 群兴</a><span class="nav-sep">·</span><a href="dashboard-xlshangpin.html"><code>xlshangpin</code> 兴链尚品</a><span class="nav-sep">·</span><a href="dashboard-juminshang.html"><code>juminshang</code> 聚闽商</a></div>
-      <div class="ts">最后生成：2026-05-01 11:49 UTC</div>
+      <div class="ts">最后生成：2026-05-04 08:35 UTC</div>
     </header>
     <p class="sub">来源：<code>docs/board.md</code> 中负责人为 <code>@CurLeaf</code> 的任务；条目展示看板分栏与仓库标签；按 <code>effort:好做|一般|难</code> 分组；组内群兴 QX 按编号，其余按标题排序。</p>
-    <p class="sub">合计 <strong>21</strong> 条（未完成 <strong>6</strong>）。</p>
+    <div class="dev-time-toolbar" id="pm-hub-dev-time-toolbar"><span class="dev-time-toolbar-label">开发计时</span> <button type="button" class="tt-toolbar-btn" id="pm-hub-export-json">导出 JSON（合并）</button> <button type="button" class="tt-toolbar-btn" id="pm-hub-export-reset">导出并重置本地</button> <button type="button" class="tt-toolbar-btn" id="pm-hub-import-clipboard">从剪贴板导入合并</button> <span class="tt-toolbar-msg" id="pm-hub-dev-time-msg"></span><p class="dev-time-toolbar-note">将 <code>docs/dev-time-state.json</code> 替换为导出内容后提交，再运行 <code>python scripts/gen_dashboard.py</code> 刷新本页。可同时用定时任务重复执行该脚本。</p></div>
+    <p class="sub">合计 <strong>22</strong> 条（未完成 <strong>7</strong>）。</p>
     <div class="toolbar-done-toggle"><button type="button" class="btn-toggle-done" id="btn-toggle-hide-done" aria-pressed="false">隐藏已完成</button></div>
-    <div class="kpi-row"><div class="kpi eff-tier-easy"><div class="kpi-label">好做</div><div class="kpi-value" style="color:#2f9e44">5</div></div><div class="kpi eff-tier-mid"><div class="kpi-label">一般</div><div class="kpi-value" style="color:#f08c00">10</div></div><div class="kpi eff-tier-hard"><div class="kpi-label">难</div><div class="kpi-value" style="color:#e03131">5</div></div><div class="kpi eff-tier-unk"><div class="kpi-label">未标</div><div class="kpi-value" style="color:#868e96">1</div></div></div>
-    <section class="eff-block eff-tier-easy"><h2><span class="eff-h2" style="color:#2f9e44">好做</span> <span class="count">(5)</span></h2><ul class="task-list"><li class="task task-done"><div class="task-head"><span class="eff-badge" style="--c:#2f9e44">好做</span> <span class="board-sec">✅ 已完成</span></div><div class="task-title">群兴 QX-07 异常商品列表样式调整 effort:好做 @CurLeaf 2026-04-28</div><div class="task-meta"><span class="tag">qunxing</span></div></li><li class="task task-done"><div class="task-head"><span class="eff-badge" style="--c:#2f9e44">好做</span> <span class="board-sec">✅ 已完成</span></div><div class="task-title">群兴 QX-15 全局 Input：移除垂直 padding（py） effort:好做 @CurLeaf 2026-05-01</div><div class="task-meta"><span class="tag">qunxing</span></div></li><li class="task task-done"><div class="task-head"><span class="eff-badge" style="--c:#2f9e44">好做</span> <span class="board-sec">✅ 已完成</span></div><div class="task-title">群兴 QX-51 仓库列表页更新 effort:好做 @CurLeaf 2026-04-29</div><div class="task-meta"><span class="tag">qunxing</span></div></li><li class="task task-done"><div class="task-head"><span class="eff-badge" style="--c:#2f9e44">好做</span> <span class="board-sec">✅ 已完成</span></div><div class="task-title">兴链尚品：首版需求与范围（1 页内）+ 里程碑初稿入 `docs/milestones.md` effort:好做 @CurLeaf 2026-04-27</div><div class="task-meta"><span class="tag">xlshangpin</span></div></li><li class="task task-done"><div class="task-head"><span class="eff-badge" style="--c:#2f9e44">好做</span> <span class="board-sec">✅ 已完成</span></div><div class="task-title">群兴 上架助手：修复异常报错「同一营业执照下已有店铺上架该档位，不可重复上架」 effort:好做 @CurLeaf 2026-04-27</div><div class="task-meta"><span class="tag">qunxing</span></div></li></ul></section><section class="eff-block eff-tier-mid"><h2><span class="eff-h2" style="color:#f08c00">一般</span> <span class="count">(10)</span></h2><ul class="task-list"><li class="task task-done"><div class="task-head"><span class="eff-badge" style="--c:#f08c00">一般</span> <span class="board-sec">✅ 已完成</span></div><div class="task-title">群兴 QX-25 兴图：备货中订单页面调整 effort:一般 @CurLeaf 2026-04-27</div><div class="task-meta"><span class="tag">qunxing</span></div></li><li class="task task-done"><div class="task-head"><span class="eff-badge" style="--c:#f08c00">一般</span> <span class="board-sec">✅ 已完成</span></div><div class="task-title">群兴 QX-26 兴图：待处理订单页面样式调整 effort:一般 @CurLeaf 2026-04-27</div><div class="task-meta"><span class="tag">qunxing</span></div></li><li class="task task-done"><div class="task-head"><span class="eff-badge" style="--c:#f08c00">一般</span> <span class="board-sec">✅ 已完成</span></div><div class="task-title">群兴 QX-27 兴图：待发货订单页面调整 effort:一般 @CurLeaf 2026-04-27</div><div class="task-meta"><span class="tag">qunxing</span></div></li><li class="task task-done"><div class="task-head"><span class="eff-badge" style="--c:#f08c00">一般</span> <span class="board-sec">✅ 已完成</span></div><div class="task-title">群兴 QX-28 兴图：已发货订单页面调整 effort:一般 @CurLeaf 2026-04-27</div><div class="task-meta"><span class="tag">qunxing</span></div></li><li class="task task-done"><div class="task-head"><span class="eff-badge" style="--c:#f08c00">一般</span> <span class="board-sec">✅ 已完成</span></div><div class="task-title">群兴 QX-29 兴图：已取消订单页面调整 effort:一般 @CurLeaf 2026-04-27</div><div class="task-meta"><span class="tag">qunxing</span></div></li><li class="task "><div class="task-head"><span class="eff-badge" style="--c:#f08c00">一般</span> <span class="board-sec">🟡 正在实现</span></div><div class="task-title">群兴 QX-40 优化创建库位表单：样式优化 effort:一般 @CurLeaf 2026-04-29</div><div class="task-meta"><span class="tag">qunxing</span></div></li><li class="task "><div class="task-head"><span class="eff-badge" style="--c:#f08c00">一般</span> <span class="board-sec">🟡 正在实现</span></div><div class="task-title">群兴 QX-46 类目权限分配 effort:一般 @CurLeaf 2026-04-29</div><div class="task-meta"><span class="tag">qunxing</span></div></li><li class="task task-done"><div class="task-head"><span class="eff-badge" style="--c:#f08c00">一般</span> <span class="board-sec">✅ 已完成</span></div><div class="task-title">群兴 QX-49 群兴系统全面架构分析图产出 effort:一般 @CurLeaf 2026-04-29</div><div class="task-meta"><span class="tag">qunxing</span></div></li><li class="task "><div class="task-head"><span class="eff-badge" style="--c:#f08c00">一般</span> <span class="board-sec">🟡 正在实现</span></div><div class="task-title">群兴 QX-54 异常商品面板：优化展示并包含对应档位商品信息 effort:一般 @CurLeaf 2026-05-01</div><div class="task-meta"><span class="tag">qunxing</span></div></li><li class="task "><div class="task-head"><span class="eff-badge" style="--c:#f08c00">一般</span> <span class="board-sec">🟡 正在实现</span></div><div class="task-title">群兴 QX-55 选品中心：展示对应商品的销售信息 effort:一般 @CurLeaf 2026-05-01</div><div class="task-meta"><span class="tag">qunxing</span></div></li></ul></section><section class="eff-block eff-tier-hard"><h2><span class="eff-h2" style="color:#e03131">难</span> <span class="count">(5)</span></h2><ul class="task-list"><li class="task task-done"><div class="task-head"><span class="eff-badge" style="--c:#e03131">难</span> <span class="board-sec">✅ 已完成</span></div><div class="task-title">群兴 QX-22 分中心邀请普通合伙人流程 · 需求分析 effort:难 @CurLeaf 2026-04-29 <a class="task-doc" href="qunxing-qx22-invite.md">说明</a></div><div class="task-meta"><span class="tag">qunxing</span></div></li><li class="task "><div class="task-head"><span class="eff-badge" style="--c:#e03131">难</span> <span class="board-sec">🟢 待开始</span></div><div class="task-title">群兴 QX-24 兴图：订单列表优化（参考兴链尚品） effort:难 @CurLeaf 2026-04-27</div><div class="task-meta"><span class="tag">qunxing</span></div></li><li class="task "><div class="task-head"><span class="eff-badge" style="--c:#e03131">难</span> <span class="board-sec">🟡 正在实现</span></div><div class="task-title">群兴 QX-38 5.1 期间针对需求的整理 effort:难 @CurLeaf 2026-04-29</div><div class="task-meta"><span class="tag">qunxing</span></div></li><li class="task task-done"><div class="task-head"><span class="eff-badge" style="--c:#e03131">难</span> <span class="board-sec">✅ 已完成</span></div><div class="task-title">群兴 QX-39 修复数据 effort:难 @CurLeaf 2026-04-29</div><div class="task-meta"><span class="tag">qunxing</span></div></li><li class="task task-done"><div class="task-head"><span class="eff-badge" style="--c:#e03131">难</span> <span class="board-sec">✅ 已完成</span></div><div class="task-title">群兴 QX-48 sql 数据同步本地的脚本优化 effort:难 @CurLeaf 2026-04-29</div><div class="task-meta"><span class="tag">qunxing</span></div></li></ul></section><section class="eff-block eff-tier-unk"><h2><span class="eff-h2" style="color:#868e96">未标</span> <span class="count">(1)</span></h2><ul class="task-list"><li class="task task-done"><div class="task-head"><span class="eff-badge" style="--c:#868e96">未标</span> <span class="board-sec">✅ 已完成</span></div><div class="task-title">初始化 pm-hub 中枢仓与看板约定 @CurLeaf 2026-01-15</div></li></ul></section>
+    <div class="kpi-row"><div class="kpi eff-tier-easy"><div class="kpi-label">好做</div><div class="kpi-value" style="color:#2f9e44">5</div></div><div class="kpi eff-tier-mid"><div class="kpi-label">一般</div><div class="kpi-value" style="color:#f08c00">11</div></div><div class="kpi eff-tier-hard"><div class="kpi-label">难</div><div class="kpi-value" style="color:#e03131">5</div></div><div class="kpi eff-tier-unk"><div class="kpi-label">未标</div><div class="kpi-value" style="color:#868e96">1</div></div></div>
+    <section class="eff-block eff-tier-easy"><h2><span class="eff-h2" style="color:#2f9e44">好做</span> <span class="count">(5)</span></h2><ul class="task-list"><li class="task task-done"><div class="task-head"><span class="eff-badge" style="--c:#2f9e44">好做</span> <span class="board-sec">✅ 已完成</span></div><div class="task-title">群兴 QX-07 异常商品列表样式调整 effort:好做 @CurLeaf 2026-04-28</div><div class="task-meta"><span class="tag">qunxing</span></div><div class="task-timer" data-task-key="qx:7" data-task-label="群兴 QX-07 异常商品列表样式调整 effort:好做 @CurLeaf 2026-04-28"><span class="tt-line"><span class="tt-total-wrap">累计 <strong class="tt-total" data-ssot-ms="0">—</strong></span> <span class="tt-run-wrap">本次 <strong class="tt-run">—</strong></span></span><span class="tt-btns"><button type="button" class="tt-btn tt-start">开始</button><button type="button" class="tt-btn tt-pause">暂停</button><button type="button" class="tt-btn tt-end">结束</button></span><span class="tt-hint" aria-live="polite"></span></div></li><li class="task task-done"><div class="task-head"><span class="eff-badge" style="--c:#2f9e44">好做</span> <span class="board-sec">✅ 已完成</span></div><div class="task-title">群兴 QX-15 全局 Input：移除垂直 padding（py） effort:好做 @CurLeaf 2026-05-01</div><div class="task-meta"><span class="tag">qunxing</span></div><div class="task-timer" data-task-key="qx:15" data-task-label="群兴 QX-15 全局 Input：移除垂直 padding（py） effort:好做 @CurLeaf 2026-05-01"><span class="tt-line"><span class="tt-total-wrap">累计 <strong class="tt-total" data-ssot-ms="0">—</strong></span> <span class="tt-run-wrap">本次 <strong class="tt-run">—</strong></span></span><span class="tt-btns"><button type="button" class="tt-btn tt-start">开始</button><button type="button" class="tt-btn tt-pause">暂停</button><button type="button" class="tt-btn tt-end">结束</button></span><span class="tt-hint" aria-live="polite"></span></div></li><li class="task task-done"><div class="task-head"><span class="eff-badge" style="--c:#2f9e44">好做</span> <span class="board-sec">✅ 已完成</span></div><div class="task-title">群兴 QX-51 仓库列表页更新 effort:好做 @CurLeaf 2026-04-29</div><div class="task-meta"><span class="tag">qunxing</span></div><div class="task-timer" data-task-key="qx:51" data-task-label="群兴 QX-51 仓库列表页更新 effort:好做 @CurLeaf 2026-04-29"><span class="tt-line"><span class="tt-total-wrap">累计 <strong class="tt-total" data-ssot-ms="0">—</strong></span> <span class="tt-run-wrap">本次 <strong class="tt-run">—</strong></span></span><span class="tt-btns"><button type="button" class="tt-btn tt-start">开始</button><button type="button" class="tt-btn tt-pause">暂停</button><button type="button" class="tt-btn tt-end">结束</button></span><span class="tt-hint" aria-live="polite"></span></div></li><li class="task task-done"><div class="task-head"><span class="eff-badge" style="--c:#2f9e44">好做</span> <span class="board-sec">✅ 已完成</span></div><div class="task-title">兴链尚品：首版需求与范围（1 页内）+ 里程碑初稿入 `docs/milestones.md` effort:好做 @CurLeaf 2026-04-27</div><div class="task-meta"><span class="tag">xlshangpin</span></div><div class="task-timer" data-task-key="h:326837cefa5abe95" data-task-label="兴链尚品：首版需求与范围（1 页内）+ 里程碑初稿入 `docs/milestones.md` effort:好做 @CurLeaf 2026…"><span class="tt-line"><span class="tt-total-wrap">累计 <strong class="tt-total" data-ssot-ms="0">—</strong></span> <span class="tt-run-wrap">本次 <strong class="tt-run">—</strong></span></span><span class="tt-btns"><button type="button" class="tt-btn tt-start">开始</button><button type="button" class="tt-btn tt-pause">暂停</button><button type="button" class="tt-btn tt-end">结束</button></span><span class="tt-hint" aria-live="polite"></span></div></li><li class="task task-done"><div class="task-head"><span class="eff-badge" style="--c:#2f9e44">好做</span> <span class="board-sec">✅ 已完成</span></div><div class="task-title">群兴 上架助手：修复异常报错「同一营业执照下已有店铺上架该档位，不可重复上架」 effort:好做 @CurLeaf 2026-04-27</div><div class="task-meta"><span class="tag">qunxing</span></div><div class="task-timer" data-task-key="h:2ae3ff737f172376" data-task-label="群兴 上架助手：修复异常报错「同一营业执照下已有店铺上架该档位，不可重复上架」 effort:好做 @CurLeaf 2026-04-27"><span class="tt-line"><span class="tt-total-wrap">累计 <strong class="tt-total" data-ssot-ms="0">—</strong></span> <span class="tt-run-wrap">本次 <strong class="tt-run">—</strong></span></span><span class="tt-btns"><button type="button" class="tt-btn tt-start">开始</button><button type="button" class="tt-btn tt-pause">暂停</button><button type="button" class="tt-btn tt-end">结束</button></span><span class="tt-hint" aria-live="polite"></span></div></li></ul></section><section class="eff-block eff-tier-mid"><h2><span class="eff-h2" style="color:#f08c00">一般</span> <span class="count">(11)</span></h2><ul class="task-list"><li class="task task-done"><div class="task-head"><span class="eff-badge" style="--c:#f08c00">一般</span> <span class="board-sec">✅ 已完成</span></div><div class="task-title">群兴 QX-25 兴图：备货中订单页面调整 effort:一般 @CurLeaf 2026-04-27</div><div class="task-meta"><span class="tag">qunxing</span></div><div class="task-timer" data-task-key="qx:25" data-task-label="群兴 QX-25 兴图：备货中订单页面调整 effort:一般 @CurLeaf 2026-04-27"><span class="tt-line"><span class="tt-total-wrap">累计 <strong class="tt-total" data-ssot-ms="0">—</strong></span> <span class="tt-run-wrap">本次 <strong class="tt-run">—</strong></span></span><span class="tt-btns"><button type="button" class="tt-btn tt-start">开始</button><button type="button" class="tt-btn tt-pause">暂停</button><button type="button" class="tt-btn tt-end">结束</button></span><span class="tt-hint" aria-live="polite"></span></div></li><li class="task task-done"><div class="task-head"><span class="eff-badge" style="--c:#f08c00">一般</span> <span class="board-sec">✅ 已完成</span></div><div class="task-title">群兴 QX-26 兴图：待处理订单页面样式调整 effort:一般 @CurLeaf 2026-04-27</div><div class="task-meta"><span class="tag">qunxing</span></div><div class="task-timer" data-task-key="qx:26" data-task-label="群兴 QX-26 兴图：待处理订单页面样式调整 effort:一般 @CurLeaf 2026-04-27"><span class="tt-line"><span class="tt-total-wrap">累计 <strong class="tt-total" data-ssot-ms="0">—</strong></span> <span class="tt-run-wrap">本次 <strong class="tt-run">—</strong></span></span><span class="tt-btns"><button type="button" class="tt-btn tt-start">开始</button><button type="button" class="tt-btn tt-pause">暂停</button><button type="button" class="tt-btn tt-end">结束</button></span><span class="tt-hint" aria-live="polite"></span></div></li><li class="task task-done"><div class="task-head"><span class="eff-badge" style="--c:#f08c00">一般</span> <span class="board-sec">✅ 已完成</span></div><div class="task-title">群兴 QX-27 兴图：待发货订单页面调整 effort:一般 @CurLeaf 2026-04-27</div><div class="task-meta"><span class="tag">qunxing</span></div><div class="task-timer" data-task-key="qx:27" data-task-label="群兴 QX-27 兴图：待发货订单页面调整 effort:一般 @CurLeaf 2026-04-27"><span class="tt-line"><span class="tt-total-wrap">累计 <strong class="tt-total" data-ssot-ms="0">—</strong></span> <span class="tt-run-wrap">本次 <strong class="tt-run">—</strong></span></span><span class="tt-btns"><button type="button" class="tt-btn tt-start">开始</button><button type="button" class="tt-btn tt-pause">暂停</button><button type="button" class="tt-btn tt-end">结束</button></span><span class="tt-hint" aria-live="polite"></span></div></li><li class="task task-done"><div class="task-head"><span class="eff-badge" style="--c:#f08c00">一般</span> <span class="board-sec">✅ 已完成</span></div><div class="task-title">群兴 QX-28 兴图：已发货订单页面调整 effort:一般 @CurLeaf 2026-04-27</div><div class="task-meta"><span class="tag">qunxing</span></div><div class="task-timer" data-task-key="qx:28" data-task-label="群兴 QX-28 兴图：已发货订单页面调整 effort:一般 @CurLeaf 2026-04-27"><span class="tt-line"><span class="tt-total-wrap">累计 <strong class="tt-total" data-ssot-ms="0">—</strong></span> <span class="tt-run-wrap">本次 <strong class="tt-run">—</strong></span></span><span class="tt-btns"><button type="button" class="tt-btn tt-start">开始</button><button type="button" class="tt-btn tt-pause">暂停</button><button type="button" class="tt-btn tt-end">结束</button></span><span class="tt-hint" aria-live="polite"></span></div></li><li class="task task-done"><div class="task-head"><span class="eff-badge" style="--c:#f08c00">一般</span> <span class="board-sec">✅ 已完成</span></div><div class="task-title">群兴 QX-29 兴图：已取消订单页面调整 effort:一般 @CurLeaf 2026-04-27</div><div class="task-meta"><span class="tag">qunxing</span></div><div class="task-timer" data-task-key="qx:29" data-task-label="群兴 QX-29 兴图：已取消订单页面调整 effort:一般 @CurLeaf 2026-04-27"><span class="tt-line"><span class="tt-total-wrap">累计 <strong class="tt-total" data-ssot-ms="0">—</strong></span> <span class="tt-run-wrap">本次 <strong class="tt-run">—</strong></span></span><span class="tt-btns"><button type="button" class="tt-btn tt-start">开始</button><button type="button" class="tt-btn tt-pause">暂停</button><button type="button" class="tt-btn tt-end">结束</button></span><span class="tt-hint" aria-live="polite"></span></div></li><li class="task "><div class="task-head"><span class="eff-badge" style="--c:#f08c00">一般</span> <span class="board-sec">🟡 正在实现</span></div><div class="task-title">群兴 QX-40 优化创建库位表单：样式优化 effort:一般 @CurLeaf 2026-04-29</div><div class="task-meta"><span class="tag">qunxing</span></div><div class="task-timer" data-task-key="qx:40" data-task-label="群兴 QX-40 优化创建库位表单：样式优化 effort:一般 @CurLeaf 2026-04-29"><span class="tt-line"><span class="tt-total-wrap">累计 <strong class="tt-total" data-ssot-ms="0">—</strong></span> <span class="tt-run-wrap">本次 <strong class="tt-run">—</strong></span></span><span class="tt-btns"><button type="button" class="tt-btn tt-start">开始</button><button type="button" class="tt-btn tt-pause">暂停</button><button type="button" class="tt-btn tt-end">结束</button></span><span class="tt-hint" aria-live="polite"></span></div></li><li class="task "><div class="task-head"><span class="eff-badge" style="--c:#f08c00">一般</span> <span class="board-sec">🟡 正在实现</span></div><div class="task-title">群兴 QX-46 类目权限分配 effort:一般 @CurLeaf 2026-04-29</div><div class="task-meta"><span class="tag">qunxing</span></div><div class="task-timer" data-task-key="qx:46" data-task-label="群兴 QX-46 类目权限分配 effort:一般 @CurLeaf 2026-04-29"><span class="tt-line"><span class="tt-total-wrap">累计 <strong class="tt-total" data-ssot-ms="0">—</strong></span> <span class="tt-run-wrap">本次 <strong class="tt-run">—</strong></span></span><span class="tt-btns"><button type="button" class="tt-btn tt-start">开始</button><button type="button" class="tt-btn tt-pause">暂停</button><button type="button" class="tt-btn tt-end">结束</button></span><span class="tt-hint" aria-live="polite"></span></div></li><li class="task task-done"><div class="task-head"><span class="eff-badge" style="--c:#f08c00">一般</span> <span class="board-sec">✅ 已完成</span></div><div class="task-title">群兴 QX-49 群兴系统全面架构分析图产出 effort:一般 @CurLeaf 2026-04-29</div><div class="task-meta"><span class="tag">qunxing</span></div><div class="task-timer" data-task-key="qx:49" data-task-label="群兴 QX-49 群兴系统全面架构分析图产出 effort:一般 @CurLeaf 2026-04-29"><span class="tt-line"><span class="tt-total-wrap">累计 <strong class="tt-total" data-ssot-ms="0">—</strong></span> <span class="tt-run-wrap">本次 <strong class="tt-run">—</strong></span></span><span class="tt-btns"><button type="button" class="tt-btn tt-start">开始</button><button type="button" class="tt-btn tt-pause">暂停</button><button type="button" class="tt-btn tt-end">结束</button></span><span class="tt-hint" aria-live="polite"></span></div></li><li class="task "><div class="task-head"><span class="eff-badge" style="--c:#f08c00">一般</span> <span class="board-sec">🟡 正在实现</span></div><div class="task-title">群兴 QX-54 异常商品面板：优化展示并包含对应档位商品信息 effort:一般 @CurLeaf 2026-05-01</div><div class="task-meta"><span class="tag">qunxing</span></div><div class="task-timer" data-task-key="qx:54" data-task-label="群兴 QX-54 异常商品面板：优化展示并包含对应档位商品信息 effort:一般 @CurLeaf 2026-05-01"><span class="tt-line"><span class="tt-total-wrap">累计 <strong class="tt-total" data-ssot-ms="0">—</strong></span> <span class="tt-run-wrap">本次 <strong class="tt-run">—</strong></span></span><span class="tt-btns"><button type="button" class="tt-btn tt-start">开始</button><button type="button" class="tt-btn tt-pause">暂停</button><button type="button" class="tt-btn tt-end">结束</button></span><span class="tt-hint" aria-live="polite"></span></div></li><li class="task "><div class="task-head"><span class="eff-badge" style="--c:#f08c00">一般</span> <span class="board-sec">🟡 正在实现</span></div><div class="task-title">群兴 QX-55 选品中心：展示对应商品的销售信息 effort:一般 @CurLeaf 2026-05-01</div><div class="task-meta"><span class="tag">qunxing</span></div><div class="task-timer" data-task-key="qx:55" data-task-label="群兴 QX-55 选品中心：展示对应商品的销售信息 effort:一般 @CurLeaf 2026-05-01"><span class="tt-line"><span class="tt-total-wrap">累计 <strong class="tt-total" data-ssot-ms="0">—</strong></span> <span class="tt-run-wrap">本次 <strong class="tt-run">—</strong></span></span><span class="tt-btns"><button type="button" class="tt-btn tt-start">开始</button><button type="button" class="tt-btn tt-pause">暂停</button><button type="button" class="tt-btn tt-end">结束</button></span><span class="tt-hint" aria-live="polite"></span></div></li><li class="task "><div class="task-head"><span class="eff-badge" style="--c:#f08c00">一般</span> <span class="board-sec">🟡 正在实现</span></div><div class="task-title">群兴 QX-56 系统平台类目提示词优化 effort:一般 @CurLeaf 2026-05-04</div><div class="task-meta"><span class="tag">qunxing</span></div><div class="task-timer" data-task-key="qx:56" data-task-label="群兴 QX-56 系统平台类目提示词优化 effort:一般 @CurLeaf 2026-05-04"><span class="tt-line"><span class="tt-total-wrap">累计 <strong class="tt-total" data-ssot-ms="0">—</strong></span> <span class="tt-run-wrap">本次 <strong class="tt-run">—</strong></span></span><span class="tt-btns"><button type="button" class="tt-btn tt-start">开始</button><button type="button" class="tt-btn tt-pause">暂停</button><button type="button" class="tt-btn tt-end">结束</button></span><span class="tt-hint" aria-live="polite"></span></div></li></ul></section><section class="eff-block eff-tier-hard"><h2><span class="eff-h2" style="color:#e03131">难</span> <span class="count">(5)</span></h2><ul class="task-list"><li class="task task-done"><div class="task-head"><span class="eff-badge" style="--c:#e03131">难</span> <span class="board-sec">✅ 已完成</span></div><div class="task-title">群兴 QX-22 分中心邀请普通合伙人流程 · 需求分析 effort:难 @CurLeaf 2026-04-29 <a class="task-doc" href="qunxing-qx22-invite.md">说明</a></div><div class="task-meta"><span class="tag">qunxing</span></div><div class="task-timer" data-task-key="qx:22" data-task-label="群兴 QX-22 分中心邀请普通合伙人流程 · 需求分析 effort:难 @CurLeaf 2026-04-29 (docs/qunxing…"><span class="tt-line"><span class="tt-total-wrap">累计 <strong class="tt-total" data-ssot-ms="0">—</strong></span> <span class="tt-run-wrap">本次 <strong class="tt-run">—</strong></span></span><span class="tt-btns"><button type="button" class="tt-btn tt-start">开始</button><button type="button" class="tt-btn tt-pause">暂停</button><button type="button" class="tt-btn tt-end">结束</button></span><span class="tt-hint" aria-live="polite"></span></div></li><li class="task "><div class="task-head"><span class="eff-badge" style="--c:#e03131">难</span> <span class="board-sec">🟢 待开始</span></div><div class="task-title">群兴 QX-24 兴图：订单列表优化（参考兴链尚品） effort:难 @CurLeaf 2026-04-27</div><div class="task-meta"><span class="tag">qunxing</span></div><div class="task-timer" data-task-key="qx:24" data-task-label="群兴 QX-24 兴图：订单列表优化（参考兴链尚品） effort:难 @CurLeaf 2026-04-27"><span class="tt-line"><span class="tt-total-wrap">累计 <strong class="tt-total" data-ssot-ms="0">—</strong></span> <span class="tt-run-wrap">本次 <strong class="tt-run">—</strong></span></span><span class="tt-btns"><button type="button" class="tt-btn tt-start">开始</button><button type="button" class="tt-btn tt-pause">暂停</button><button type="button" class="tt-btn tt-end">结束</button></span><span class="tt-hint" aria-live="polite"></span></div></li><li class="task "><div class="task-head"><span class="eff-badge" style="--c:#e03131">难</span> <span class="board-sec">🟡 正在实现</span></div><div class="task-title">群兴 QX-38 5.1 期间针对需求的整理 effort:难 @CurLeaf 2026-04-29</div><div class="task-meta"><span class="tag">qunxing</span></div><div class="task-timer" data-task-key="qx:38" data-task-label="群兴 QX-38 5.1 期间针对需求的整理 effort:难 @CurLeaf 2026-04-29"><span class="tt-line"><span class="tt-total-wrap">累计 <strong class="tt-total" data-ssot-ms="0">—</strong></span> <span class="tt-run-wrap">本次 <strong class="tt-run">—</strong></span></span><span class="tt-btns"><button type="button" class="tt-btn tt-start">开始</button><button type="button" class="tt-btn tt-pause">暂停</button><button type="button" class="tt-btn tt-end">结束</button></span><span class="tt-hint" aria-live="polite"></span></div></li><li class="task task-done"><div class="task-head"><span class="eff-badge" style="--c:#e03131">难</span> <span class="board-sec">✅ 已完成</span></div><div class="task-title">群兴 QX-39 修复数据 effort:难 @CurLeaf 2026-04-29</div><div class="task-meta"><span class="tag">qunxing</span></div><div class="task-timer" data-task-key="qx:39" data-task-label="群兴 QX-39 修复数据 effort:难 @CurLeaf 2026-04-29"><span class="tt-line"><span class="tt-total-wrap">累计 <strong class="tt-total" data-ssot-ms="0">—</strong></span> <span class="tt-run-wrap">本次 <strong class="tt-run">—</strong></span></span><span class="tt-btns"><button type="button" class="tt-btn tt-start">开始</button><button type="button" class="tt-btn tt-pause">暂停</button><button type="button" class="tt-btn tt-end">结束</button></span><span class="tt-hint" aria-live="polite"></span></div></li><li class="task task-done"><div class="task-head"><span class="eff-badge" style="--c:#e03131">难</span> <span class="board-sec">✅ 已完成</span></div><div class="task-title">群兴 QX-48 sql 数据同步本地的脚本优化 effort:难 @CurLeaf 2026-04-29</div><div class="task-meta"><span class="tag">qunxing</span></div><div class="task-timer" data-task-key="qx:48" data-task-label="群兴 QX-48 sql 数据同步本地的脚本优化 effort:难 @CurLeaf 2026-04-29"><span class="tt-line"><span class="tt-total-wrap">累计 <strong class="tt-total" data-ssot-ms="0">—</strong></span> <span class="tt-run-wrap">本次 <strong class="tt-run">—</strong></span></span><span class="tt-btns"><button type="button" class="tt-btn tt-start">开始</button><button type="button" class="tt-btn tt-pause">暂停</button><button type="button" class="tt-btn tt-end">结束</button></span><span class="tt-hint" aria-live="polite"></span></div></li></ul></section><section class="eff-block eff-tier-unk"><h2><span class="eff-h2" style="color:#868e96">未标</span> <span class="count">(1)</span></h2><ul class="task-list"><li class="task task-done"><div class="task-head"><span class="eff-badge" style="--c:#868e96">未标</span> <span class="board-sec">✅ 已完成</span></div><div class="task-title">初始化 pm-hub 中枢仓与看板约定 @CurLeaf 2026-01-15</div><div class="task-timer" data-task-key="h:7eb4da6e64f46177" data-task-label="初始化 pm-hub 中枢仓与看板约定 @CurLeaf 2026-01-15"><span class="tt-line"><span class="tt-total-wrap">累计 <strong class="tt-total" data-ssot-ms="0">—</strong></span> <span class="tt-run-wrap">本次 <strong class="tt-run">—</strong></span></span><span class="tt-btns"><button type="button" class="tt-btn tt-start">开始</button><button type="button" class="tt-btn tt-pause">暂停</button><button type="button" class="tt-btn tt-end">结束</button></span><span class="tt-hint" aria-live="polite"></span></div></li></ul></section>
     <p class="footer">由 <code>python scripts/gen_dashboard.py</code> 生成，请勿手改。</p>
   </div>
 <script>
@@ -187,6 +217,164 @@
     apply(on);
     try { localStorage.setItem(KEY, on ? '1' : '0'); } catch (e) {}
   });
+})();
+</script><script type="application/json" id="pm-hub-dev-time-ssot">{"version":1,"tasks":{}}</script><script>
+(function(){
+var LS='pm-hub-dev-time-overlay-v1';
+function $(q,c){return (c||document).querySelector(q);}
+function $all(q,c){return [].slice.call((c||document).querySelectorAll(q));}
+function nowIso(){return new Date().toISOString();}
+function parseSsot(){
+  var el=document.getElementById('pm-hub-dev-time-ssot');
+  if(!el||!el.textContent)return{version:1,tasks:{}};
+  try{return JSON.parse(el.textContent);}catch(e){return{version:1,tasks:{}};}
+}
+function loadOv(){
+  try{var t=localStorage.getItem(LS);if(!t)return{v:1,activeKey:null,activeStartMs:null,tasks:{}};return JSON.parse(t);}
+  catch(e){return{v:1,activeKey:null,activeStartMs:null,tasks:{}};}
+}
+function saveOv(o){try{localStorage.setItem(LS,JSON.stringify(o));}catch(e){}}
+function ensureTask(ov,k){
+  if(!ov.tasks[k])ov.tasks[k]={addMs:0,sessions:[],lastEndedAt:null,note:''};
+  return ov.tasks[k];
+}
+function fmt(ms){
+  if(ms<=0)return '—';
+  ms=Math.floor(ms/1000);var s=ms%60;ms=(ms-s)/60;var m=ms%60;var h=(ms-m)/60;
+  if(h>0)return h+'h '+m+'m';
+  if(m>0)return s?m+'m '+s+'s':m+'m';
+  return s+'s';
+}
+function runningExtra(ov,k){
+  if(ov.activeKey===k&&ov.activeStartMs)return Math.max(0,Date.now()-ov.activeStartMs);
+  return 0;
+}
+function taskTotalDisplay(ssot,ov,k){
+  var s=(ssot.tasks||{})[k]||{};var sk=0;try{sk=Math.max(0,parseInt(s.totalMs,10)||0);}catch(e){}
+  var o=(ov.tasks||{})[k]||{};
+  return sk+(o.addMs||0)+runningExtra(ov,k);
+}
+function flushActive(ov){
+  if(!ov.activeKey||!ov.activeStartMs)return;
+  var k=ov.activeKey;var dur=Math.max(0,Date.now()-ov.activeStartMs);
+  var t=ensureTask(ov,k);
+  t.addMs=(t.addMs||0)+dur;
+  t.sessions=t.sessions||[];
+  t.sessions.push({start:new Date(ov.activeStartMs).toISOString(),end:nowIso()});
+  ov.activeKey=null;ov.activeStartMs=null;
+}
+function pauseOtherAndStart(ov,key){
+  flushActive(ov);
+  ov.activeKey=key;ov.activeStartMs=Date.now();
+}
+function pauseCurrent(ov){
+  flushActive(ov);
+}
+function endCurrent(ov,key){
+  if(ov.activeKey===key)flushActive(ov);
+  var t=ensureTask(ov,key);t.lastEndedAt=nowIso();
+}
+function exportMerged(ssot,ov){
+  var out={version:1,tasks:{}};
+  var keys={};
+  $all('.task-timer').forEach(function(el){keys[el.getAttribute('data-task-key')]=1;});
+  Object.keys(ssot.tasks||{}).forEach(function(k){keys[k]=1;});
+  Object.keys(ov.tasks||{}).forEach(function(k){keys[k]=1;});
+  var ak=ov.activeKey,as=ov.activeStartMs;
+  Object.keys(keys).forEach(function(k){
+    if(!k)return;
+    var s=(ssot.tasks||{})[k]||{};
+    var sk=0;try{sk=Math.max(0,parseInt(s.totalMs,10)||0);}catch(e){}
+    var lo=(ov.tasks||{})[k]||{addMs:0,sessions:[]};
+    var add=lo.addMs||0;
+    var runX=0;
+    if(ak===k&&as)runX=Math.max(0,Date.now()-as);
+    var sess=([].concat(s.sessions||[],lo.sessions||[]));
+    var note=(typeof lo.note==='string'?lo.note:(s.note||''));
+    out.tasks[k]={
+      totalMs:sk+add+runX,
+      sessions:sess,
+      lastEndedAt:lo.lastEndedAt||s.lastEndedAt||null,
+      note:note
+    };
+  });
+  return out;
+}
+function updateAll(){
+  var ssot=parseSsot();var ov=loadOv();
+  $all('.task-timer').forEach(function(el){
+    var k=el.getAttribute('data-task-key');if(!k)return;
+    var tt=$('.tt-total',el),tr=$('.tt-run',el),hint=$('.tt-hint',el);
+    var tot=taskTotalDisplay(ssot,ov,k);
+    tt.textContent=fmt(tot);
+    if(ov.activeKey===k&&ov.activeStartMs){
+      tr.textContent=fmt(Date.now()-ov.activeStartMs);
+      if(hint)hint.textContent='计时中…';
+    }else{
+      tr.textContent='—';
+      if(hint)hint.textContent='';
+    }
+  });
+}
+var tick=0;
+function startTick(){if(tick)return;tick=setInterval(updateAll,500);}
+function wire(el){
+  var k=el.getAttribute('data-task-key');if(!k)return;
+  $('.tt-start',el).addEventListener('click',function(){
+    var ov=loadOv();
+    if(ov.activeKey===k){ pauseCurrent(ov); saveOv(ov); updateAll(); return; }
+    pauseOtherAndStart(ov,k); saveOv(ov); updateAll(); startTick();
+  });
+  $('.tt-pause',el).addEventListener('click',function(){
+    var ov=loadOv();if(ov.activeKey!==k)return;pauseCurrent(ov);saveOv(ov);updateAll();
+  });
+  $('.tt-end',el).addEventListener('click',function(){
+    var ov=loadOv();endCurrent(ov,k);saveOv(ov);updateAll();
+  });
+}
+function downloadJson(obj,fname){
+  var blob=new Blob([JSON.stringify(obj,null,2)+'\n'],{type:'application/json;charset=utf-8'});
+  var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=fname||'dev-time-state.json';
+  document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(a.href);a.remove();},0);
+}
+function msg(t){var m=$('#pm-hub-dev-time-msg');if(m)m.textContent=t||'';}
+function mergeImportIntoOverlay(ov,imp){
+  var tasks=imp.tasks||{};
+  Object.keys(tasks).forEach(function(k){
+    var src=tasks[k]||{};
+    var t=ensureTask(ov,k);
+    var sm=0;try{sm=Math.max(0,parseInt(src.totalMs,10)||0);}catch(e){}
+    t.addMs=(t.addMs||0)+sm;
+    if(src.sessions&&src.sessions.length)t.sessions=(t.sessions||[]).concat(src.sessions);
+    if(src.lastEndedAt)t.lastEndedAt=src.lastEndedAt;
+    if(typeof src.note==='string'&&src.note)t.note=src.note;
+  });
+}
+document.addEventListener('DOMContentLoaded',function(){
+  $all('.task-timer').forEach(wire);
+  var ex=$('#pm-hub-export-json');
+  if(ex)ex.addEventListener('click',function(){
+    var o=exportMerged(parseSsot(),loadOv());downloadJson(o,'dev-time-state.json');msg('已下载 dev-time-state.json');
+  });
+  var er=$('#pm-hub-export-reset');
+  if(er)er.addEventListener('click',function(){
+    if(!confirm('导出合并 JSON 并清除本机未同步的计时增量？'))return;
+    var o=exportMerged(parseSsot(),loadOv());downloadJson(o,'dev-time-state.json');
+    try{localStorage.removeItem(LS);}catch(e){}
+    msg('已下载并重置本地 overlay');updateAll();
+  });
+  var im=$('#pm-hub-import-clipboard');
+  if(im)im.addEventListener('click',function(){
+    if(!navigator.clipboard||!navigator.clipboard.readText){
+      msg('当前环境不支持剪贴板读取');return;
+    }
+    navigator.clipboard.readText().then(function(txt){
+      try{var imp=JSON.parse(txt);var ov=loadOv();mergeImportIntoOverlay(ov,imp);saveOv(ov);msg('已合并剪贴板 JSON');updateAll();}
+      catch(e){msg('剪贴板内容不是合法 JSON');}
+    }).catch(function(){msg('无法读取剪贴板');});
+  });
+  updateAll();startTick();
+});
 })();
 </script>
 </body>

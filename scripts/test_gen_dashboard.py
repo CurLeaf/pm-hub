@@ -17,6 +17,26 @@ _spec.loader.exec_module(_gd)
 
 
 class TestParsers(unittest.TestCase):
+    def test_task_stable_key_qx_and_hash(self):
+        T = _gd.Task
+        t1 = T("- [ ] x", False, "群兴 QX-7 eff [qunxing]", "S", ["qunxing"], None)
+        self.assertEqual(_gd.task_stable_key(t1), "qx:7")
+        t2 = T("- [ ] y", False, "No qx id [qunxing]", "S", ["qunxing"], None)
+        self.assertTrue(_gd.task_stable_key(t2).startswith("h:"))
+        self.assertEqual(len(_gd.task_stable_key(t2)), 2 + 16)
+
+    def test_format_duration_ms(self):
+        self.assertEqual(_gd.format_duration_ms(0), "—")
+        self.assertIn("m", _gd.format_duration_ms(125000))
+
+    def test_load_dev_time_state_missing_file(self):
+        import tempfile
+
+        p = Path(tempfile.gettempdir()) / "nonexistent-dev-time-xxxx.json"
+        s = _gd.load_dev_time_state(p)
+        self.assertEqual(s["version"], _gd.DEV_TIME_STATE_VERSION)
+        self.assertEqual(s["tasks"], {})
+
     def test_parse_repos(self):
         md = """
 | 短名 | 其它 |
@@ -108,6 +128,8 @@ class TestParsers(unittest.TestCase):
         self.assertIn("群兴任务", html)
         self.assertIn("QX-01", html)
         self.assertIn("好做", html)
+        self.assertIn("pm-hub-dev-time-ssot", html)
+        self.assertIn("class=\"task-timer\"", html)
         # 任务标题已去标签；说明区含 [qunxing] 字面
         self.assertNotIn("effort:好做 [qunxing]", html)
         self.assertNotIn('class="tag"', html)

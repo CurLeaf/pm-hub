@@ -12,6 +12,7 @@
 - [ ] 群兴 QX-40 优化创建库位表单：样式优化 effort:一般 [qunxing] @CurLeaf 2026-04-29
 - [ ] 群兴 QX-43 员工审核前后端页面 effort:一般 [qunxing] @伟鹏 2026-04-29
 - [ ] 群兴 QX-46 类目权限分配 effort:一般 [qunxing] @CurLeaf 2026-04-29
+- [ ] 群兴 QX-56 系统平台类目提示词优化 effort:一般 [qunxing] @CurLeaf 2026-05-04
 
 ## 🟢 待开始
 

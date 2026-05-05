@@ -49,9 +49,17 @@
 
 解析器以表头为锚点，读取后续数据行；可在表格前后写自由说明文字。
 
+## 开发用时 `docs/dev-time-state.json`
+
+- **任务列表与是否完成**仍以 `docs/board.md` 的 `- [ ]` / `- [x]` 为准；本文件只存**开发时长与计时侧状态**（如分段 `sessions`、`lastEndedAt`），便于与看板**分离维护**。
+- **键**：与生成脚本一致——含 `QX-编号` 时用 `qx:编号`，否则用任务整行哈希 `h:…`（改写的任务行会生成新键，旧条目需手迁或在 JSON 中合并）。
+- **与仪表盘**：`python scripts/gen_dashboard.py` 会读取本文件，将快照嵌入各 `dashboard*.html`；在浏览器中对 **累计 / 本次** 的展示会在本地 `localStorage` 上叠加**未同步增量**，通过页面上的 **导出 JSON** 写回仓库（推荐 **`导出并重置本地`** 避免与下一版 SSOT 重复累计）。
+- **可选合并**：若需把另一来源的导出合并进仓库 JSON，可用 `python scripts/merge_dev_time_export.py`（见脚本 `--help`）。
+- **定时同步**：仅指定时运行 **`python scripts/gen_dashboard.py`**，使已提交的 `board.md` + `dev-time-state.json` 刷新为静态 HTML；**不会**从浏览器自动拉取 JSON。
+
 ## 自动产物（HTML）
 
-- **`docs/dashboard.html`**：全量看板、顶部 **项目 / 个人** 入口（各专页）、里程碑、**负载热力图**（团队产品线 × 看板分栏、负责人 × 看板分栏，颜色表示相对任务量）等；**只读**来源：`repos.md`、`docs/board.md`、`docs/milestones.md`。
+- **`docs/dashboard.html`**：全量看板、顶部 **项目 / 个人** 入口（各专页）、里程碑、**负载热力图**（团队产品线 × 看板分栏、负责人 × 看板分栏，颜色表示相对任务量）等；**只读**来源：`repos.md`、`docs/board.md`、`docs/milestones.md`、**`docs/dev-time-state.json`（开发计时快照）**。
 - **`docs/dashboard-qunxing.html`**：仅含看板中标注 `[qunxing]` 的群兴 QX 任务，按 `effort:好做|一般|难` 分组展示。
 - **`docs/dashboard-xlshangpin.html`**：仅含看板中标注 `[xlshangpin]` 的任务，按 `effort:好做|一般|难` 分组展示。
 - **`docs/dashboard-juminshang.html`**：仅含看板中标注 `[juminshang]` 的任务，按 `effort:好做|一般|难` 分组展示。
