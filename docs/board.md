@@ -7,12 +7,14 @@
 - [ ] 群兴 QX-35 已发货订单：批量打印修复 effort:一般 [qunxing] @凯杰 2026-04-29
 - [ ] 群兴 QX-53 同步店铺封禁状态，发请求时自动过滤异常店铺与订单（阻塞 QX-35） effort:一般 [qunxing] @嘉松 2026-04-30
 - [ ] 群兴 QX-54 异常商品面板：优化展示并包含对应档位商品信息 effort:一般 [qunxing] @CurLeaf 2026-05-01
-- [ ] 群兴 QX-55 选品中心：展示对应商品的销售信息 effort:一般 [qunxing] @CurLeaf 2026-05-01
+- [ ] 群兴 QX-55 选品中心的销售信息展示 effort:一般 [qunxing] @CurLeaf 2026-05-05
+- [ ] 群兴 QX-57 上架助手：算法优化 effort:难 [qunxing] @CurLeaf 2026-05-05
+- [ ] 群兴 QX-59 分中心：销售信息不准确 effort:一般 [qunxing] @CurLeaf 2026-05-05
 - [ ] 群兴 QX-38 5.1 期间针对需求的整理 effort:难 [qunxing] @CurLeaf 2026-04-29
 - [ ] 群兴 QX-40 优化创建库位表单：样式优化 effort:一般 [qunxing] @CurLeaf 2026-04-29
 - [ ] 群兴 QX-43 员工审核前后端页面 effort:一般 [qunxing] @伟鹏 2026-04-29
-- [ ] 群兴 QX-46 类目权限分配 effort:一般 [qunxing] @CurLeaf 2026-04-29
-- [ ] 群兴 QX-56 系统平台类目提示词优化 effort:一般 [qunxing] @CurLeaf 2026-05-04
+- [ ] 群兴 QX-46 品类运营的权限划分 effort:一般 [qunxing] @CurLeaf 2026-05-05
+- [ ] 群兴 QX-56 AI 提示词工程优化：纳入平台类目属性键值对，通用提示词 + 类目提示词；Ozon 先行融合属性中的标签字段 effort:一般 [qunxing] @CurLeaf 2026-05-05
 
 ## 🟢 待开始
 
@@ -21,6 +23,8 @@
 - [ ] 群兴 QX-13 商品刊登页：按用户关联规则筛选店铺（创建者/被分配者/分配与执照规则待与甲方确认）+ 长列表样式优化 effort:好做 [qunxing] @tbd 2026-04-26
 - [ ] 群兴 QX-31 商品刊登：货号刊登加密与回写解密（低优先级） effort:一般 [qunxing] @tbd 2026-04-28
 - [ ] 群兴 QX-32 店铺列表搜索优化 effort:好做 [qunxing] @书达 2026-04-28
+- [ ] 群兴 QX-61 加盟商系统：业务熟悉 effort:一般 [qunxing] @凯杰 2026-05-05
+- [ ] 群兴 QX-62 档位信息：翻译功能 effort:好做 [qunxing] @书达 2026-05-05
 - [ ] 群兴 QX-05 定价策略生成图：删除/编辑/指定图重生成（低优先级） effort:一般 [qunxing] @tbd 2026-04-26
 - [ ] 群兴 QX-23 分中心：额度设置（员工数量、店铺数量等） effort:一般 [qunxing] @tbd 2026-04-26
 - [ ] 群兴 QX-24 兴图：订单列表优化（参考兴链尚品） effort:难 [qunxing] @CurLeaf 2026-04-27
@@ -33,6 +37,18 @@
 
 ## ✅ 已完成
 
+- [x] 群兴 QX-72 中台选品中心：最新排序方式 effort:好做 [qunxing] @书达 2026-05-06
+- [x] 群兴 QX-71 选品中心：跨类目全选 effort:好做 [qunxing] @CurLeaf 2026-05-06
+- [x] 群兴 QX-70 发货批次修复 effort:一般 [qunxing] @CurLeaf 2026-05-06
+- [x] 群兴 QX-69 体重秤的状态管理 effort:好做 [qunxing] @CurLeaf 2026-05-06
+- [x] 群兴 QX-58 切割系统商品与平台商品卡的尺寸/重量，上架使用平台商品卡数据 effort:一般 [qunxing] @CurLeaf 2026-05-05
+- [x] 群兴 QX-68 中台、分中心：分页操作栏 sticky 悬浮 effort:好做 [qunxing] @CurLeaf 2026-05-05
+- [x] 群兴 QX-60 订单无法发货的店铺：展示对应封禁标识 effort:好做 [qunxing] @CurLeaf 2026-05-05
+- [x] 群兴 QX-67 修复上架助手库存同步机制 effort:一般 [qunxing] @嘉松 2026-05-05
+- [x] 群兴 QX-66 选品中心：分页跳转机制 effort:好做 [qunxing] @CurLeaf 2026-05-05
+- [x] 群兴 QX-65 中台选品中心：批量删除确认按钮 effort:好做 [qunxing] @CurLeaf 2026-05-05
+- [x] 群兴 QX-64 商品详情弹窗：店铺搜索 effort:好做 [qunxing] @CurLeaf 2026-05-05
+- [x] 群兴 QX-63 中台选品中心：tempKey 随筛选条件更新 effort:好做 [qunxing] @CurLeaf 2026-05-05
 - [x] 群兴 QX-15 全局 Input：移除垂直 padding（py） effort:好做 [qunxing] @CurLeaf 2026-05-01
 - [x] 群兴 QX-11 兴图：创建新角色 effort:好做 [qunxing] @华彬 2026-04-29
 - [x] 群兴 QX-50 商品上架与对应状态同步迁至外部 worker effort:难 [qunxing] @嘉松 2026-04-29
